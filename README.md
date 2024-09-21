@@ -5,4 +5,5 @@ Installing:
 3. get the binary from `genpass-rs/target/debug/genpassrs`
 4. you figure out the rest :)
 
-Read more about the project at https://westwardfishd.me/blog/
+Read more about the project at https://westwardfishd.me/projects/genpass-rs
+
