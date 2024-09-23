@@ -5,7 +5,7 @@ mod stringgeneration;
 use std::process::exit;
 
 // calls to modules
-use args::GenpassArgs;
+use args::*;
 use clap::Parser;
 
 fn throwerrors(exitcode: u8) {
@@ -13,42 +13,46 @@ fn throwerrors(exitcode: u8) {
         1 => eprintln!(
             "Specified no valid encoding. See 'genpassrs --help' for valid character types."
         ), // No character or invalid type error
-        2 => eprintln!(
-            "Error, {} larger than {}, exiting gracefully.",
-            GenpassArgs::parse().length,
-            std::u8::MAX
-        ),
         _ => eprintln!("genpassrs failed to recognize this specific error. Weird..."),
     };
     exit(1);
 }
+
 fn main() {
     let args = GenpassArgs::parse();
-    let mut string: String = String::new();
+
+    let mut result_string: String = String::new();
     let min: u8;
     let mut max: u8 = 0;
 
-    match args.space {
-        true => min = 32,
-        false => min = 33,
-    };
-    match args.encoding.as_str() {
-        "extasc" | "extascii" => max = 255,
-        "ascii" | "asc" => max = 127,
-        _ => throwerrors(1),
-    };
+    // argument match cases
+    match args.generate {
+        Generate::String(StringArgs) => {
+            let space = StringArgs.space;
+            match space {
+                true => min = 32,
+                false => min = 33,
+            }
+            match StringArgs.encoding.as_str() {
+                "ext" | "extasc" => max = 255,
+                "asc" | "ascii" => max = 127,
+                _ => throwerrors(1),
+            }
+            result_string = stringgeneration::generator(StringArgs.length, min, max, result_string);
+            if args.debug {
+                dbg!(min, max, StringArgs.length);
+            }
+        }
+        Generate::Integer(IntegerArgs) => {
+            result_string = stringgeneration::intgen(IntegerArgs.length, result_string);
 
-    if args.length > std::u8::MAX {
-        throwerrors(2);
+            if args.debug {
+                dbg!(IntegerArgs.length);
+            }
+        }
     }
 
-    // string is outputted here.
-    string = stringgeneration::generator(args.length, min, max, string);
     //debugging information
-    if args.debug {
-        dbg!(min, max, args.space);
-    }
-    print!("{string}\n");
-
-    // generate the random characters.
+    // string is outputted here.
+    print!("{result_string}\n");
 }
