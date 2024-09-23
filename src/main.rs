@@ -11,7 +11,7 @@ use clap::Parser;
 fn throwerrors(exitcode: u8) {
     match exitcode {
         1 => eprintln!(
-            "Specified no valid encoding. See 'genpassrs --help' for valid character types."
+            "Specified no valid encoding. See 'genpassrs string --help' for valid character types."
         ), // No character or invalid type error
         _ => eprintln!("genpassrs failed to recognize this specific error. Weird..."),
     };
