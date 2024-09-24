@@ -24,7 +24,7 @@ pub fn generator(length: u8, char_min: u8, char_max: u8, mut string: String) -> 
         string.push(c);
 
         if x > 128 && target_bytesize < max_size {
-            target_bytesize = target_bytesize + 1;
+            target_bytesize += 1;
             bytesize += 2
         } else {
             bytesize += 1;
