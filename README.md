@@ -1,8 +1,16 @@
 ## Installing:
 
+### For Windows Users:
+There is now a precompiled binary attached to all releases <= 1.0.2
+You can simply run the .exe in a command prompt to use the software as desired.
+
+The binary was compiled using a x86_64 bit processor, so be warned!
+
+### Manual Installation:
+
 1. Install rust from https://www.rust-lang.org/tools/install
-2. Use `cargo build` to compile.
-3. get the binary from `genpass-rs/target/debug/genpassrs`
+2. Use `cargo build --release` to compile.
+3. get the binary from `genpass-rs/target/build/genpassrs`
 4. you figure out the rest :)
 
 Read more about the project at https://westwardfishd.me/projects/genpass-rs
