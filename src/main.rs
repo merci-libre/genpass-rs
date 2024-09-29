@@ -57,6 +57,12 @@ fn main() {
                 dbg!(IntegerArgs.length);
             }
         }
+        Generate::Alphanumeric(AlphaArgs) => {
+            result_string = stringgeneration::alphanumeric(AlphaArgs.length, result_string);
+            if debug {
+                dbg!(AlphaArgs.length);
+            }
+        }
         Generate::Estimate(EstimateArgs) => {
             if EstimateArgs.string.is_empty() {
                 throwerrors(2);
