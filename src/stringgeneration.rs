@@ -13,7 +13,7 @@ pub fn generator(length: u8, char_min: u8, char_max: u8, mut string: String) -> 
 
     while bytesize != target_bytesize {
         let mut random = rand::thread_rng();
-        let mut x: u8 = random.gen_range(char_min..char_max + 1);
+        let mut x: u8 = random.gen_range(char_min..char_max);
         let c: char;
 
         //remove unused table portions and control characters.
