@@ -1,6 +1,6 @@
 [package]
 name = "genpassrs"
-version = "1.0.3"
+version = "1.0.4"
 edition = "2021" #forgot to change the year lol.
 
 [dependencies]

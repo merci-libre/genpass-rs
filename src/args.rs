@@ -53,6 +53,15 @@ pub struct StringArgs {
 
 #[derive(Clone, Debug, Args)]
 pub struct AlphaArgs {
+    /// Print only letters
+    #[arg(long, short)]
+    pub alphabet: bool,
+    /// Print only lowercase letters
+    #[arg(long, short)]
+    pub smallcase: bool,
+    /// Print only uppercase letters
+    #[arg(long, short)]
+    pub upper: bool,
     /// Length of the string
     #[arg(long, short)]
     pub length: u8,

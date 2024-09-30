@@ -54,16 +54,19 @@ pub fn intgen(length: u8, mut string: String) -> String {
     return string;
 }
 
-pub fn alphanumeric(length: u8, mut string: String) -> String {
+pub fn alphanumeric(length: u8, char_min: u8, char_max: u8, mut string: String) -> String {
     for _i in 0..length {
         let mut random = rand::thread_rng();
-        let mut x: u8 = random.gen_range(48..123);
+        let mut x: u8 = random.gen_range(char_min..char_max);
         let c: char;
+
         while (58..65).contains(&x) || (91..97).contains(&x) {
             x = random.gen_range(48..123);
         }
+
         c = x.into();
         string.push(c);
     }
+
     return string;
 }

@@ -14,7 +14,7 @@ fn throwerrors(exitcode: u8) {
         1 => eprintln!(
             "Specified no valid encoding. See 'genpassrs string --help' for valid character types."
         ), // No character or invalid type error
-        2 => eprintln!("Error cannot parse an empty string."),
+        2 => eprintln!("Error: cannot parse an empty string."),
         _ => eprintln!("genpassrs failed to recognize this specific error. Weird..."),
     };
     exit(1);
@@ -58,9 +58,27 @@ fn main() {
             }
         }
         Generate::Alphanumeric(AlphaArgs) => {
-            result_string = stringgeneration::alphanumeric(AlphaArgs.length, result_string);
+            // enumerate arguments
+            let mut char_min: u8 = 48;
+            let mut char_max: u8 = 123;
+
+            if AlphaArgs.alphabet {
+                char_min = 65;
+            }
+            if AlphaArgs.smallcase || AlphaArgs.upper {
+                char_max = 90;
+            }
+            result_string =
+                stringgeneration::alphanumeric(AlphaArgs.length, char_min, char_max, result_string);
+            // manage letter cases.
+            if AlphaArgs.upper && !AlphaArgs.smallcase {
+                result_string = result_string.to_uppercase();
+            }
+            if AlphaArgs.smallcase && !AlphaArgs.upper {
+                result_string = result_string.to_lowercase();
+            }
             if debug {
-                dbg!(AlphaArgs.length);
+                dbg!(char_min, char_max, AlphaArgs.length);
             }
         }
         Generate::Estimate(EstimateArgs) => {
