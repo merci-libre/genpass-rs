@@ -6,15 +6,18 @@ use clap_stdin::MaybeStdin;
 pub struct GenpassArgs {
     /// Commands
     #[command(subcommand)]
-    pub generate: Generate,
+    pub commands: Commands,
 
     /// Prints debugging information.
     #[arg(long, short)]
     pub debug: bool,
+    /// Loops the program (currently only works for String command)
+    #[arg(long, short)]
+    pub r#loop: bool,
 }
 
 #[derive(Clone, Debug, Subcommand)]
-pub enum Generate {
+pub enum Commands {
     /// Generates a new string of specified length.
     String(StringArgs),
     /// Generates an integer of specified length.
@@ -23,7 +26,10 @@ pub enum Generate {
     Alphanumeric(AlphaArgs),
     /// Estimates the strength of password.
     Estimate(EstimateArgs),
+    /// Use Steganography to embed generated password into.
+    Store(StoreArgs),
 }
+// Generation Arguments
 
 #[derive(Clone, Debug, Args)]
 pub struct EstimateArgs {
@@ -72,4 +78,51 @@ pub struct IntegerArgs {
     /// Length of the string
     #[arg(long, short)]
     pub length: u8,
+}
+
+// database arguments
+#[derive(Clone, Debug, Args)]
+pub struct StoreArgs {
+    #[command(subcommand)]
+    /// Use Steganography to store strings into PNGs or JPEGs.
+    pub store: ImageCommands,
+}
+#[derive(Clone, Debug, Subcommand)]
+pub enum ImageCommands {
+    /// Generates a string using the default 'String Command' and stores the result into an image.
+    Generate(NewArgs),
+    /// Read and decrypt stored password from an image
+    Read(ReadArgs),
+    /// Write an existing password to an image.
+    Existing(ExistingArgs),
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct NewArgs {
+    /// encoding for the characters used in the password. Valid arguments include: 'extasc, ascii'
+    #[arg(long, short)]
+    pub encoding: String,
+    ///Produces spaces (char 32) in the password generated.
+    #[arg(long, short)]
+    pub space: bool,
+    /// Length of the string
+    #[arg(long, short)]
+    pub length: u8,
+    /// Name of the image file to encrypt the password into.
+    #[arg(long, short)]
+    pub name: String,
+}
+#[derive(Clone, Debug, Args)]
+pub struct ExistingArgs {
+    /// String to encode into image.
+    #[arg(long, short)]
+    pub pass: String,
+    /// Image to modify.
+    #[arg(long, short)]
+    pub name: String,
+}
+#[derive(Clone, Debug, Args)]
+pub struct ReadArgs {
+    /// name of the file to decrypt
+    pub name: String,
 }

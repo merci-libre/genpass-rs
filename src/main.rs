@@ -1,40 +1,67 @@
 // modules
 mod args;
+mod steganographic;
 mod stringgeneration;
 mod zxcvbn;
 
-use std::process::exit;
+use std::{fs::File, io::Write, process::exit};
 
 // calls to modules
 use args::*;
 use clap::Parser;
+
+/*
+ To make things a bit more readable, I rewrote most of my comments inside of the program,
+ because I completely forgot what most things did in here. I realized that most of my comments
+ that I had originally made were kinda sh*t so I'm going to best explain what my thought
+ process was when creating this program.
+
+ The main file just does all the argument and error handling for the majority of the program.
+ It comprises of 2 primary functions:
+
+ - throwerrors() // just catches and throws unexpected errors should they occur,
+ - main() // matches command line arguments to their specified modules. Provides both parameters,
+             among other things.
+
+
+ There will be comments mostly explaining how or why things are set not only in this file, but in
+ stringgeneration.rs, db.rs, and whichever modules that may or may not come up.
+
+ Additionally, I will be creating better documentation on my website, permitted that I have the
+ time to do so.
+
+*/
 
 fn throwerrors(exitcode: u8) {
     match exitcode {
         1 => eprintln!(
             "Specified no valid encoding. See 'genpassrs string --help' for valid character types."
         ), // No character or invalid type error
-        2 => eprintln!("Error: cannot parse an empty string."),
-        _ => eprintln!("genpassrs failed to recognize this specific error. Weird..."),
+        2 => eprintln!("Error: cannot parse an empty string."), // should rarely happen, but if it does, well...
+        _ => eprintln!("genpassrs failed to recognize this specific error. Weird..."), // should rarely happen, but if it does, well...
     };
     exit(1);
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     // parse the arguments for clap
     let args = GenpassArgs::parse();
 
     let mut result_string: String = String::new();
-    // to make things a bit more readable.
     let debug = args.debug;
-    let command = args.generate;
-    //min and max value of inputted chars, enumerates spaces and encoding.
+    let command = args.commands;
+    let lp = args.r#loop;
+    /*
+     *
+     * */
     let min: u8;
     let mut max: u8 = 0;
 
     // argument match cases
     match command {
-        Generate::String(StringArgs) => {
+        /* String Command */
+        Commands::String(StringArgs) => {
+            // main stuff
             let space = StringArgs.space;
             match space {
                 true => min = 32,
@@ -45,31 +72,82 @@ fn main() {
                 "asc" | "ascii" => max = 127,
                 _ => throwerrors(1),
             }
-            result_string = stringgeneration::generator(StringArgs.length, min, max, result_string);
+            result_string =
+                stringgeneration::generator(StringArgs.length, min, max, result_string, debug);
+
             if debug {
                 dbg!(min, max, StringArgs.length);
+                println!("[String Vector]:\n{:#x?}", result_string.as_bytes());
+                println!("Vector Size: {}", result_string.as_bytes().len());
+            }
+
+            // loops the program inside of here. can be refactored into a function (TODO)
+            match lp {
+                true => loop {
+                    result_string = String::new();
+                    result_string = stringgeneration::generator(
+                        StringArgs.length,
+                        min,
+                        max,
+                        result_string,
+                        debug,
+                    );
+                    if debug {
+                        dbg!(min, max, StringArgs.length);
+                        println!("[String Vector]:\n{:#x?}", result_string.as_bytes());
+                        println!("Vector Size: {}", result_string.as_bytes().len());
+                    }
+                    println!("\n{}", result_string);
+                },
+                false => (),
             }
         }
-        Generate::Integer(IntegerArgs) => {
+        /* Integer Command */
+        Commands::Integer(IntegerArgs) => {
             result_string = stringgeneration::intgen(IntegerArgs.length, result_string);
 
             if debug {
                 dbg!(IntegerArgs.length);
             }
+
+            match lp {
+                true => loop {
+                    result_string = String::new();
+                    result_string = stringgeneration::intgen(IntegerArgs.length, result_string);
+                    if debug {
+                        dbg!(IntegerArgs.length);
+                        println!("[String Vector]:\n{:#x?}", result_string.as_bytes());
+                    }
+                    println!("\n{}", result_string);
+                },
+                false => (),
+            }
         }
-        Generate::Alphanumeric(AlphaArgs) => {
-            // enumerate arguments
-            let mut char_min: u8 = 48;
-            let mut char_max: u8 = 123;
+        /* Alphanumeric Command */
+        Commands::Alphanumeric(AlphaArgs) => {
+            /*
+             * By default, the starting character will be '0' if no and encompass all letters from
+             * 'A-Z, a-z'. However, if the user specifies that they want only a select case
+             * (i.e, uppercase or lowercase generation ONLY), the program will only generate the
+             * utf-8 codes 'A-Z'. This was done to reduce the frequency of the same character being
+             * generated.
+             */
+
+            let mut min: u8 = 48;
+            let mut max: u8 = 123;
 
             if AlphaArgs.alphabet {
-                char_min = 65;
+                min = 65;
             }
             if AlphaArgs.smallcase || AlphaArgs.upper {
-                char_max = 90;
+                max = 90;
             }
+            /*
+              We store the result string first in the case that the user only had specified
+              uppercase or lowercase letter generation, otherwise the program just finishes.
+            */
             result_string =
-                stringgeneration::alphanumeric(AlphaArgs.length, char_min, char_max, result_string);
+                stringgeneration::alphanumeric(AlphaArgs.length, min, max, result_string);
             // manage letter cases.
             if AlphaArgs.upper && !AlphaArgs.smallcase {
                 result_string = result_string.to_uppercase();
@@ -77,11 +155,32 @@ fn main() {
             if AlphaArgs.smallcase && !AlphaArgs.upper {
                 result_string = result_string.to_lowercase();
             }
+            match lp {
+                true => loop {
+                    result_string = String::new();
+                    result_string =
+                        stringgeneration::alphanumeric(AlphaArgs.length, min, max, result_string);
+                    if debug {
+                        dbg!(min, max, AlphaArgs.length);
+                        println!("[String Vector]:\n{:#x?}", result_string.as_bytes());
+                    }
+                    if AlphaArgs.upper && !AlphaArgs.smallcase {
+                        result_string = result_string.to_uppercase();
+                    }
+                    if AlphaArgs.smallcase && !AlphaArgs.upper {
+                        result_string = result_string.to_lowercase();
+                    }
+                    println!("\n{}", result_string);
+                },
+                false => (),
+            }
             if debug {
-                dbg!(char_min, char_max, AlphaArgs.length);
+                dbg!(min, max, AlphaArgs.length);
             }
         }
-        Generate::Estimate(EstimateArgs) => {
+
+        /* Estimate Command */
+        Commands::Estimate(EstimateArgs) => {
             if EstimateArgs.string.is_empty() {
                 throwerrors(2);
             }
@@ -111,11 +210,41 @@ fn main() {
                 _ =>todo!()
             }
         }
+
+        /* Database Commands */
+        Commands::Store(StoreArgs) => {
+            println!("genpassrs password database tool v.0.1");
+
+            let subcommand = StoreArgs.store;
+            match subcommand {
+                ImageCommands::Generate(NewArgs) => {
+                    let space = NewArgs.space;
+                    match space {
+                        true => min = 32,
+                        false => min = 33,
+                    }
+                    match NewArgs.encoding.as_str() {
+                        "ext" | "extasc" => max = 255,
+                        "asc" | "ascii" => max = 127,
+                        _ => throwerrors(1),
+                    }
+                    result_string =
+                        stringgeneration::generator(NewArgs.length, min, max, result_string, debug);
+                    steganographic::store(NewArgs.name, result_string.clone());
+                }
+                ImageCommands::Read(ReadArgs) => {
+                    steganographic::extract(ReadArgs.name);
+                }
+                ImageCommands::Existing(ExistingArgs) => {
+                    steganographic::store(ExistingArgs.name, ExistingArgs.pass.clone().to_string());
+                    dbg!();
+                }
+            }
+        }
     }
 
-    //debugging information
-    // string is outputted here.
     if result_string != "" {
         print!("{result_string}\n");
     }
+    Ok(())
 }
