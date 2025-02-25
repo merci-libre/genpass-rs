@@ -1,3 +1,6 @@
+
+# Merci-Libre's Genpass-rs
+The official page for Merci-Libre's genpass-rs. Created by westwardfishdme ().
 ## Installing:
 
 ### For Windows Users:
@@ -14,7 +17,7 @@ The binary was compiled using a x86_64 bit processor, so be warned!
 3. get the binary from `genpass-rs/target/build/genpassrs`
 4. you figure out the rest :)
 
-Read more about the project at https://westwardfishd.me/projects/genpass-rs
+Read more about the project on my [website](https://westwardfishd.me/projects/genpass-rs)
 
 ## Usage
 
@@ -41,6 +44,39 @@ Read more about the project at https://westwardfishd.me/projects/genpass-rs
 ### Password Strength Estimation:
 
 `genpassrs estimate <string>` OR `<stdin> | genpassrs estimate -`
+## Using Steganographic Functions to embed or store passwords/messages.
+
+This program uses 2 crates for steganographic functionality: 
+- [Stegano](https://github.com/wiseaidev/stegano) for encrypting and formatting payloads.
+- [Steganography](https://github.com/teovoinea/steganography) for actually embedding the payloads into the images.
+
+When encrypting a payload into an image, Genpass-rs uses AES-128 to securely store up to 240-byte long strings into images.
+To use the steganographic functions the inputted file must meet the following criteria:
+- Must be a [.jpg, .jpeg, or .png]
+- Must be at least 1kb in size, however as of 1.1.2 there is no check on file size. Meaning that smaller images may result in an error or crash.
+- Must not have any previous data embedded into an image using this program (or other programs using steganography), there is no way to check for this in the software at the current moment, so use fresh unedited images before using this command!
+
+The steganographic file will be outputted as a `.png`
+
+### Storing and Reading
+Genpass-rs comes with 2 methods of storing passwords into images:
+1. Generate a password up to 240 bytes (240 characters, or 120 characters with utf-8 converted extended ascii),
+2. Storing a payload up to 240 bytes.
+You may choose to encrypt the payloads before storing them into images by passing the `-u` argument.
+
+For example:
+
+`genpassrs steg embed -n some.png -p "Hello World" -u` 
+
+This command will store the payload `Hello World` into the image `some.png` without encryption.   
+
+For generating a new random password with encryption, you can use the following command:
+
+`genpassrs steg generate -n some.jpeg -l 50 -e extasc -s`
+
+This command will generate a new passphrase with both ascii and extended ascii of length `50`, and then store it into the file `some.jpeg`.  
+
+This will 
 
 # Modules
 
@@ -49,10 +85,30 @@ Genpassrs supports module usage outside of genpass for whatever project you are 
 ## Using modules
 Genpassrs includes string generation AND integer generation in stringgeneration.rs
 
-This includes the functions: 
+The following functions are modular, and can be used in any application or program:
 - generator(length:u8, char_encodingMinValue:u8, char_encodingMaxValue:u8, outputString:String) -> returns a string of specified length.
 - intgen(length:u8, outputString:String) -> returns a string of integers of specified length.
 - alphanumeric(length:u8, char_min:u8, char_max:u8, outputString:String)-> returns a string of alphanumeric characters.
+- estimate(input:String)-> outputs a number 1 through 4, see (https://docs.rs/zxcvbn/latest/zxcvbn/) for more details.
+
+
+to use them, simply copy the desired files into your project, and add them in as modules.
+
+e.g.:
+
+```
+[ in *your* project directory: `main.rs`,`stringgeneration.rs` ]
+use mod stringgeneration;
+
+fn main(){
+  let mut string=String::new(); // create a mutable string
+  string=stringgeneration::generator(30,32,127,string); //example of using the generator function
+
+  println!("{}", string);
+}
+```
+
+This will create a string of length 30, use spaces in the generation, and generate characters all the way up to character 127 (z). For more information on character codes, please see: [the wikipedia article here](https://en.wikipedia.org/wiki/ASCII#Printable_character_table).)  
 
 This can be used in a plethora of ways-- according to your use case. 
 
