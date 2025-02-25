@@ -108,7 +108,7 @@ fn main(){
 }
 ```
 
-This will create a string of length 30, use spaces in the generation, and generate characters all the way up to character 127 (z). For more information on character codes, please see: [the wikipedia article here](https://en.wikipedia.org/wiki/ASCII#Printable_character_table).)  
+This will create a string of length 30, use spaces in the generation, and generate characters all the way up to character 127 (z). For more information on character codes, please see: [the wikipedia article here](https://en.wikipedia.org/wiki/ASCII#Printable_character_table).
 
 This can be used in a plethora of ways-- according to your use case. 
 
