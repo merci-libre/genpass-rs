@@ -26,8 +26,8 @@ pub enum Commands {
     Alphanumeric(AlphaArgs),
     /// Estimates the strength of password.
     Estimate(EstimateArgs),
-    /// Use Steganography to embed generated password into.
-    Store(StoreArgs),
+    /// Use Steganography to store strings into PNGs or JPEGs. Acceptable formats: ([.png], [.jpg], [.jpeg])
+    Steg(StoreArgs),
 }
 // Generation Arguments
 
@@ -84,7 +84,7 @@ pub struct IntegerArgs {
 #[derive(Clone, Debug, Args)]
 pub struct StoreArgs {
     #[command(subcommand)]
-    /// Use Steganography to store strings into PNGs or JPEGs.
+    /// Use Steganography to store strings into PNGs or JPEGs. Acceptable formats: ([.png], [.jpg], [.jpeg])
     pub store: ImageCommands,
 }
 #[derive(Clone, Debug, Subcommand)]
@@ -94,7 +94,7 @@ pub enum ImageCommands {
     /// Read and decrypt stored password from an image
     Read(ReadArgs),
     /// Write an existing password to an image.
-    Existing(ExistingArgs),
+    Embed(ExistingArgs),
 }
 
 #[derive(Clone, Debug, Args)]
@@ -105,24 +105,37 @@ pub struct NewArgs {
     ///Produces spaces (char 32) in the password generated.
     #[arg(long, short)]
     pub space: bool,
-    /// Length of the string
+    /// Length of the string. Can only be up to 240 characters for 'asc' and 120 for 'extasc'.
     #[arg(long, short)]
     pub length: u8,
     /// Name of the image file to encrypt the password into.
     #[arg(long, short)]
     pub name: String,
+    /// Use this option to embed the message into the image without any encryption.
+    ///
+    /// (DANGEROUS FOR STORING PASSWORDS!)
+    #[arg(long, short)]
+    pub unencrypted: bool,
 }
 #[derive(Clone, Debug, Args)]
 pub struct ExistingArgs {
     /// String to encode into image.
     #[arg(long, short)]
-    pub pass: String,
+    pub payload: String,
     /// Image to modify.
     #[arg(long, short)]
     pub name: String,
+    /// Use this option to embed the message into the image without any encryption.
+    ///
+    /// (DANGEROUS FOR STORING PASSWORDS!)
+    #[arg(long, short)]
+    pub unencrypted: bool,
 }
 #[derive(Clone, Debug, Args)]
 pub struct ReadArgs {
-    /// name of the file to decrypt
+    /// Name of the image file to read and decrypt.
     pub name: String,
+    /// If you stored a payload that was unencrypted, use this option to read it.
+    #[arg(long, short)]
+    pub unencrypted: bool,
 }

@@ -4,7 +4,7 @@ mod steganographic;
 mod stringgeneration;
 mod zxcvbn;
 
-use std::{fs::File, io::Write, process::exit};
+use std::{path::Path, process::exit};
 
 // calls to modules
 use args::*;
@@ -38,6 +38,10 @@ fn throwerrors(exitcode: u8) {
             "Specified no valid encoding. See 'genpassrs string --help' for valid character types."
         ), // No character or invalid type error
         2 => eprintln!("Error: cannot parse an empty string."), // should rarely happen, but if it does, well...
+        3 => eprintln!("Error: File is not any of the following types: .png, .jpg, .jpeg"),
+        4 => eprintln!("Error: File does not exist, please check the path or see genpassrs store <subcommand> --help"),
+        5 => eprintln!("Error: Payload is longer than 240 bytes, please keep your payload lower than 240 characters."),
+        6 => eprintln! ("Error: Using the `extasc` command with `generate` generate strings longer than 120 characters.\n       This is due to certain technological limitations with the steganography crate."),
         _ => eprintln!("genpassrs failed to recognize this specific error. Weird..."), // should rarely happen, but if it does, well...
     };
     exit(1);
@@ -211,12 +215,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        /* Database Commands */
-        Commands::Store(StoreArgs) => {
-            println!("genpassrs password database tool v.0.1");
+        /* Steganographic Commands */
+        Commands::Steg(StoreArgs) => {
+            println!("genpassrs Password Storage CLI v.1.0");
 
             let subcommand = StoreArgs.store;
             match subcommand {
+                // NewArgs is the command parser for Generate, originally named New, so don't fret
+                // about the ARGs parser being named differently than the actual command name.
                 ImageCommands::Generate(NewArgs) => {
                     let space = NewArgs.space;
                     match space {
@@ -230,14 +236,68 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                     result_string =
                         stringgeneration::generator(NewArgs.length, min, max, result_string, debug);
-                    steganographic::store(NewArgs.name, result_string.clone());
+                    if max == 255 && NewArgs.length > 120 {
+                        throwerrors(6);
+                    }
+
+                    if Path::new(&NewArgs.name).exists() {
+                        if NewArgs.name.contains(".jpeg")
+                            || NewArgs.name.contains(".png")
+                            || NewArgs.name.contains(".jpg")
+                        {
+                            match steganographic::store(
+                                NewArgs.name,
+                                result_string.clone(),
+                                NewArgs.unencrypted,
+                            ) {
+                                true => (),
+                                false => throwerrors(5),
+                            }
+                        } else {
+                            throwerrors(3);
+                        }
+                    } else {
+                        throwerrors(4);
+                    }
                 }
                 ImageCommands::Read(ReadArgs) => {
-                    steganographic::extract(ReadArgs.name);
+                    if Path::new(&ReadArgs.name).exists() {
+                        if ReadArgs.name.contains(".jpg")
+                            || ReadArgs.name.contains(".jpeg")
+                            || ReadArgs.name.contains(".png")
+                        {
+                            match ReadArgs.unencrypted {
+                                false => steganographic::extract(ReadArgs.name),
+                                true => steganographic::extract_raw(ReadArgs.name),
+                            }
+                        } else {
+                            throwerrors(3);
+                        }
+                    } else {
+                        throwerrors(4);
+                    }
                 }
-                ImageCommands::Existing(ExistingArgs) => {
-                    steganographic::store(ExistingArgs.name, ExistingArgs.pass.clone().to_string());
-                    dbg!();
+                ImageCommands::Embed(ExistingArgs) => {
+                    if Path::new(&ExistingArgs.name).exists() {
+                        if ExistingArgs.name.contains(".jpg")
+                            || ExistingArgs.name.contains(".png")
+                            || ExistingArgs.name.contains(".jpeg")
+                        {
+                            match steganographic::store(
+                                ExistingArgs.name,
+                                ExistingArgs.payload,
+                                ExistingArgs.unencrypted,
+                                // See documentation for how this function works.
+                            ) {
+                                true => (),
+                                false => throwerrors(5),
+                            }
+                        } else {
+                            throwerrors(3);
+                        }
+                    } else {
+                        throwerrors(4);
+                    }
                 }
             }
         }
