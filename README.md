@@ -76,8 +76,6 @@ For generating a new random password with encryption, you can use the following 
 
 This command will generate a new passphrase with both ascii and extended ascii of length `50`, and then store it into the file `some.jpeg`.  
 
-This will 
-
 # Modules
 
 Genpassrs supports module usage outside of genpass for whatever project you are working on. Of course, you can use a wrapper to use genpassrs in any project.
