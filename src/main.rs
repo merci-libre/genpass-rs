@@ -39,9 +39,9 @@ fn throwerrors(exitcode: u8) {
         ), // No character or invalid type error
         2 => eprintln!("Error: cannot parse an empty string."), // should rarely happen, but if it does, well...
         3 => eprintln!("Error: File is not any of the following types: .png, .jpg, .jpeg"),
-        4 => eprintln!("Error: File does not exist, please check the path or see genpassrs store <subcommand> --help"),
+        4 => eprintln!("Error: File does not exist, please check the path or see genpassrs steg <subcommand> --help"),
         5 => eprintln!("Error: Payload is longer than 240 bytes, please keep your payload lower than 240 characters."),
-        6 => eprintln! ("Error: Using the `extasc` command with `generate` generate strings longer than 120 characters.\n       This is due to certain technological limitations with the steganography crate."),
+        6 => eprintln! ("Error: Using the `extasc` command with `generate` generate strings longer than 120 characters.\n   This is due to certain technological limitations with the steganography crate."),
         _ => eprintln!("genpassrs failed to recognize this specific error. Weird..."), // should rarely happen, but if it does, well...
     };
     exit(1);
@@ -225,25 +225,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 // about the ARGs parser being named differently than the actual command name.
                 ImageCommands::Generate(NewArgs) => {
                     let space = NewArgs.space;
-                    match space {
-                        true => min = 32,
-                        false => min = 33,
-                    }
-                    match NewArgs.encoding.as_str() {
-                        "ext" | "extasc" => max = 255,
-                        "asc" | "ascii" => max = 127,
-                        _ => throwerrors(1),
-                    }
+                    let min = match space {
+                        true => 32,
+                        false => 33,
+                    };
+                    let max = match NewArgs.encoding.as_str() {
+                        "ext" | "extasc" => 255,
+                        "asc" | "ascii" => 127,
+                        _ => {
+                            throwerrors(1);
+                            255 // dont ask.
+                        }
+                    };
                     result_string =
                         stringgeneration::generator(NewArgs.length, min, max, result_string, debug);
                     if max == 255 && NewArgs.length > 120 {
+                        // error 6: max length for extended ascii/utf-8 cannot exceed 120
+                        // characters
                         throwerrors(6);
                     }
 
                     if Path::new(&NewArgs.name).exists() {
-                        if NewArgs.name.contains(".jpeg")
-                            || NewArgs.name.contains(".png")
-                            || NewArgs.name.contains(".jpg")
+                        if NewArgs.name.to_lowercase().contains(".jpeg")
+                            || NewArgs.name.to_lowercase().contains(".png")
+                            || NewArgs.name.to_lowercase().contains(".jpg")
                         {
                             match steganographic::store(
                                 NewArgs.name,
@@ -251,20 +256,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 NewArgs.unencrypted,
                             ) {
                                 true => (),
+                                // error 5: longer than 240 characters.
                                 false => throwerrors(5),
                             }
                         } else {
+                            // error 3: invalid file extension.
                             throwerrors(3);
                         }
                     } else {
+                        // error 4: file does not exist.
                         throwerrors(4);
                     }
                 }
                 ImageCommands::Read(ReadArgs) => {
                     if Path::new(&ReadArgs.name).exists() {
-                        if ReadArgs.name.contains(".jpg")
-                            || ReadArgs.name.contains(".jpeg")
-                            || ReadArgs.name.contains(".png")
+                        if ReadArgs.name.to_lowercase().contains(".jpg")
+                            || ReadArgs.name.to_lowercase().contains(".jpeg")
+                            || ReadArgs.name.to_lowercase().contains(".png")
                         {
                             match ReadArgs.unencrypted {
                                 false => steganographic::extract(ReadArgs.name),
@@ -279,9 +287,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 ImageCommands::Embed(ExistingArgs) => {
                     if Path::new(&ExistingArgs.name).exists() {
-                        if ExistingArgs.name.contains(".jpg")
-                            || ExistingArgs.name.contains(".png")
-                            || ExistingArgs.name.contains(".jpeg")
+                        if ExistingArgs.name.to_lowercase().contains(".jpg")
+                            || ExistingArgs.name.to_lowercase().contains(".png")
+                            || ExistingArgs.name.to_lowercase().contains(".jpeg")
                         {
                             match steganographic::store(
                                 ExistingArgs.name,
@@ -290,12 +298,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 // See documentation for how this function works.
                             ) {
                                 true => (),
+                                // error 5: longer than 240 characters.
                                 false => throwerrors(5),
                             }
                         } else {
+                            // error 3: invalid file extension.
                             throwerrors(3);
                         }
                     } else {
+                        // error 4: file does not exist.
                         throwerrors(4);
                     }
                 }
