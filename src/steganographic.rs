@@ -43,16 +43,19 @@ fn encrypt(input_string_vector: Vec<u8>, key: &str) -> Vec<u8> {
     return encrypted; // finish
 }
 
-fn decrypt(input_vec: Vec<u8>, key: &str) {
+fn decrypt(input_vec: &Vec<u8>, key: &str, count: u8) -> u8 {
     let decrypted = stegano::utils::decrypt_data(key, &input_vec);
     let conversion = match str::from_utf8(&decrypted) {
         Ok(v) => v,
         Err(_e) => {
-            eprintln!("There was an issue with decryption. Double check your password, or there may be no encryption on the file.");
-            exit(1)
+            if count > 1 {
+                eprintln!("Wrong password. You have ({}) more attempts.", count - 1);
+            }
+            return count - 1;
         } // if process to convert vector back into a string fails, exit out of the program.
     };
-    println!("{}", conversion);
+    println!("\n{}", conversion);
+    return 0;
 }
 
 fn format_output(mut input: String) -> String {
@@ -173,11 +176,14 @@ pub fn extract(in_file: String) {
     let clean_buffer: Vec<u8> = out_buffer.into_iter().filter(|b| *b != 0xff_u8).collect();
 
     //password
-    print!("Enter your password: ");
-    std::io::stdout().flush().unwrap();
-    let key = read_password().unwrap();
 
-    decrypt(clean_buffer, key.as_str());
+    let mut attempts = 4;
+    while attempts != 0 {
+        print!("Enter your password: ");
+        std::io::stdout().flush().unwrap();
+        let key = read_password().unwrap();
+        attempts = decrypt(&clean_buffer, key.as_str(), attempts);
+    }
 }
 
 pub fn extract_raw(in_file: String) {
