@@ -108,28 +108,31 @@ pub struct NewArgs {
     /// Length of the string. Can only be up to 240 characters for 'asc' and 120 for 'extasc'.
     #[arg(long, short)]
     pub length: u8,
-    /// Name of the image file to encrypt the password into.
-    #[arg(long, short)]
-    pub name: String,
     /// Use this option to embed the message into the image without any encryption.
     ///
     /// (DANGEROUS FOR STORING PASSWORDS!)
     #[arg(long, short)]
     pub unencrypted: bool,
+    /// name of the output file
+    #[arg(long, short, default_value = "")]
+    pub output: String,
+    /// Name of the input image file to encrypt the password into.
+    pub name: String,
 }
 #[derive(Clone, Debug, Args)]
 pub struct ExistingArgs {
     /// String to encode into image.
     #[arg(long, short)]
     pub payload: String,
-    /// Image to modify.
-    #[arg(long, short)]
-    pub name: String,
     /// Use this option to embed the message into the image without any encryption.
     ///
     /// (DANGEROUS FOR STORING PASSWORDS!)
     #[arg(long, short)]
     pub unencrypted: bool,
+    #[arg(long, short, default_value = "")]
+    pub output: String,
+    /// Image to modify.
+    pub name: String,
 }
 #[derive(Clone, Debug, Args)]
 pub struct ReadArgs {

@@ -36,11 +36,14 @@ fn testing(string: String, char_value: u8, char_count: i16, target_bytesize: i16
 }
 
 pub fn generator(
-    length: u8,
-    char_min: u8,
-    char_max: u8,
-    mut string: String,
-    debug: bool,
+    //O(n)
+    length: u8, // length of the password, cannot exceed 255 and must be an 8-bit unsigned integer
+    char_min: u8, // minimum value that the generator can generate. Must be an 8-bit unsigned
+    // integer.
+    char_max: u8, // maximum value that the generator can generate. Must be an 8-bit unsigned
+    // integer.
+    mut string: String, // inputted string, must be mutable and of type "String".
+    debug: bool, // Show debugging information, and real-time generation. Takes a boolean value.
 ) -> String {
     let mut bytesize: i16 = 0;
     let mut target_bytesize: i16 = length.into();

@@ -58,8 +58,13 @@ fn decrypt(input_vec: &Vec<u8>, key: &str, count: u8) -> u8 {
     return 0;
 }
 
-fn format_output(mut input: String) -> String {
-    let output_substring = "_output";
+fn format_output(mut input: String, output_fname: String) -> String {
+    let mut substring = "_output";
+    if output_fname.eq(&String::from("")) {
+        input.push_str(substring);
+    } else {
+        input = output_fname
+    }
     if input.contains(".png") {
         input = input.replace(".png", "");
     }
@@ -70,42 +75,39 @@ fn format_output(mut input: String) -> String {
     if input.contains(".jpg") {
         input = input.replace(".jpg", "");
     }
-    input.push_str(output_substring);
-    input.push_str(".png");
 
+    input.push_str(".png");
     // handle duplicate outputs.
     if Path::new(&input).exists() {
         let mut i: u32 = 0;
         while Path::new(&input).exists() {
-            let mut newfilename = input.clone();
             loop {
-                if newfilename.contains(".png") {
-                    newfilename = newfilename.replace(".png", "");
+                if input.contains(".png") {
+                    input = input.replace(".png", "");
                 }
-                let mut new_outputsub = format!("{}{}", output_substring, i);
-                let mut prev_outputsub = String::new();
+                let mut new_outputsub = format!("{}{}", substring, i);
+                let prev_substring: String;
                 match i {
-                    0 => prev_outputsub = output_substring.to_string(),
-                    _ => prev_outputsub = format!("{}{}", output_substring, i - 1),
+                    0 => prev_substring = substring.to_string(),
+                    _ => prev_substring = format!("{}{}", substring, i - 1),
                 }
-                if newfilename.contains(new_outputsub.as_str()) {
-                    new_outputsub = format!("{}{}", output_substring, i);
+                if input.contains(new_outputsub.as_str()) {
+                    new_outputsub = format!("{}{}", substring, i);
                 }
-                newfilename = newfilename.replace(prev_outputsub.as_str(), "");
+                input = input.replace(prev_substring.as_str(), "");
 
-                newfilename = newfilename.replace(output_substring, "");
-                newfilename.push_str(new_outputsub.as_str());
+                input = input.replace(substring, "");
+                input.push_str(new_outputsub.as_str());
                 break;
             }
-            newfilename.push_str(".png");
-            input = newfilename;
+            input.push_str(".png");
             i += 1;
         }
     }
     return input;
 }
 
-pub fn store(out_file: String, payload: String, unencrypted: bool) -> bool {
+pub fn store(out_file: String, output_fname: String, payload: String, unencrypted: bool) -> bool {
     let mut vector = Vec::new();
     if payload.len() > 240 {
         // exits the program with an error from the main file because the payload is greater than 240 characters.
@@ -159,7 +161,7 @@ pub fn store(out_file: String, payload: String, unencrypted: bool) -> bool {
         let result = enc.encode_alpha();
 
         // format the output to a readable format.
-        mout = format_output(mout);
+        mout = format_output(mout, output_fname);
         println!("Storing data into {}", mout);
 
         save_image_buffer(result, mout.to_string());
@@ -182,6 +184,7 @@ pub fn extract(in_file: String) {
         print!("Enter your password: ");
         std::io::stdout().flush().unwrap();
         let key = read_password().unwrap();
+
         attempts = decrypt(&clean_buffer, key.as_str(), attempts);
     }
 }

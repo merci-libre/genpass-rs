@@ -10,6 +10,12 @@ use std::{path::Path, process::exit};
 use args::*;
 use clap::Parser;
 
+struct Information {
+    name: String,
+    version: String,
+    author: String,
+    contact: String,
+}
 /*
  To make things a bit more readable, I rewrote most of my comments inside of the program,
  because I completely forgot what most things did in here. I realized that most of my comments
@@ -32,7 +38,9 @@ use clap::Parser;
 
 */
 
+// rewrite this as a method.. use Result Types.
 fn throwerrors(exitcode: u8) {
+    /*get rid of magic numbers*/
     match exitcode {
         1 => eprintln!(
             "Specified no valid encoding. See 'genpassrs string --help' for valid character types."
@@ -50,6 +58,12 @@ fn throwerrors(exitcode: u8) {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // parse the arguments for clap
     let args = GenpassArgs::parse();
+    let info: Information = Information {
+        name: String::from("genpass-rs"),
+        author: String::from("Westwardfishdme/finch"),
+        version: String::from("1.4"),
+        contact: String::from("westwardfishme@gmail.com"),
+    };
 
     let mut result_string: String = String::new();
     let debug = args.debug;
@@ -217,7 +231,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         /* Steganographic Commands */
         Commands::Steg(StoreArgs) => {
-            println!("genpassrs Password Storage CLI v.1.0");
+            eprintln!(
+                "{} v.{} password steganography tool",
+                info.name, info.version
+            );
 
             let subcommand = StoreArgs.store;
             match subcommand {
@@ -244,7 +261,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         // characters
                         throwerrors(6);
                     }
-
+                    // switch to magic bytes
                     if Path::new(&NewArgs.name).exists() {
                         if NewArgs.name.to_lowercase().contains(".jpeg")
                             || NewArgs.name.to_lowercase().contains(".png")
@@ -252,6 +269,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         {
                             match steganographic::store(
                                 NewArgs.name,
+                                NewArgs.output,
                                 result_string.clone(),
                                 NewArgs.unencrypted,
                             ) {
@@ -270,6 +288,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 ImageCommands::Read(ReadArgs) => {
                     if Path::new(&ReadArgs.name).exists() {
+                        //switch to magic bytes by v2
                         if ReadArgs.name.to_lowercase().contains(".jpg")
                             || ReadArgs.name.to_lowercase().contains(".jpeg")
                             || ReadArgs.name.to_lowercase().contains(".png")
@@ -287,12 +306,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 ImageCommands::Embed(ExistingArgs) => {
                     if Path::new(&ExistingArgs.name).exists() {
+                        // switch to magic bytes by v2.
                         if ExistingArgs.name.to_lowercase().contains(".jpg")
                             || ExistingArgs.name.to_lowercase().contains(".png")
                             || ExistingArgs.name.to_lowercase().contains(".jpeg")
                         {
                             match steganographic::store(
                                 ExistingArgs.name,
+                                ExistingArgs.output,
                                 ExistingArgs.payload,
                                 ExistingArgs.unencrypted,
                                 // See documentation for how this function works.
