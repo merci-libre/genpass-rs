@@ -2,6 +2,7 @@ use clap::{Args, Parser, Subcommand};
 use clap_stdin::MaybeStdin;
 
 #[derive(Clone, Debug, Parser)]
+#[clap(version)]
 
 pub struct GenpassArgs {
     /// Commands
@@ -47,7 +48,7 @@ pub struct EstimateArgs {
 #[derive(Clone, Debug, Args)]
 pub struct StringArgs {
     /// encoding for the characters used in the password. Valid arguments include: 'extasc, ascii'
-    #[arg(long, short)]
+    #[arg(long, short, default_value = "ascii")]
     pub encoding: String,
     ///Produces spaces (char 32) in the password generated.
     #[arg(long, short)]
@@ -100,7 +101,7 @@ pub enum ImageCommands {
 #[derive(Clone, Debug, Args)]
 pub struct NewArgs {
     /// encoding for the characters used in the password. Valid arguments include: 'extasc, ascii'
-    #[arg(long, short)]
+    #[arg(long, short, default_value = "ascii")]
     pub encoding: String,
     ///Produces spaces (char 32) in the password generated.
     #[arg(long, short)]

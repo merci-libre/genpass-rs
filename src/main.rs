@@ -60,10 +60,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = GenpassArgs::parse();
     let info: Information = Information {
         name: String::from("genpass-rs"),
-        author: String::from("Westwardfishdme/finch"),
-        version: String::from("1.4"),
+        version: String::from("1.4.0"),
+        author: String::from("Westwardfishdme/Finch"),
         contact: String::from("westwardfishme@gmail.com"),
     };
+    eprintln!(
+        "{} v.{} \n- Developed by: {}\n- Contact: {}\n",
+        info.name, info.version, info.author, info.contact
+    );
 
     let mut result_string: String = String::new();
     let debug = args.debug;
@@ -231,11 +235,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         /* Steganographic Commands */
         Commands::Steg(StoreArgs) => {
-            eprintln!(
-                "{} v.{} password steganography tool",
-                info.name, info.version
-            );
-
             let subcommand = StoreArgs.store;
             match subcommand {
                 // NewArgs is the command parser for Generate, originally named New, so don't fret
