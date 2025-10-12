@@ -1,10 +1,10 @@
 [package]
 name = "genpassrs"
-version = "1.1.2"
+version = "1.4.0"
 edition = "2021" #forgot to change the year lol.
 
 [dependencies]
-clap = { version = "4.5.17", features = ["derive"] }
+clap = { version = "4.5.48", features = ["derive"] }
 clap-stdin = "0.5.1"
 image = "0.25.5"
 rand = "0.8.5"
