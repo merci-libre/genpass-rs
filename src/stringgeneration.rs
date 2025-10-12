@@ -1,4 +1,4 @@
-use rand::Rng;
+use rand::{rngs::StdRng, Rng, SeedableRng};
 /*
 * [stringgeneration.rs]
 *
@@ -65,15 +65,15 @@ pub fn generator(
      *
      * */
 
+    let mut random = StdRng::from_os_rng();
     while bytesize != target_bytesize {
         // continuously generates random characters until the target_bytesize is reached.
-        let mut random = rand::thread_rng();
-        let mut x: u8 = random.gen_range(char_min..char_max);
+        let mut x: u8 = random.random_range(char_min..char_max);
         let c: char;
 
         //if the character generated is an escape code, or unused table entry: regenerate.
         while (127..161).contains(&x) {
-            x = random.gen_range(char_min..char_max);
+            x = random.random_range(char_min..char_max);
         }
         c = x.into();
         string.push(c);
@@ -97,10 +97,10 @@ pub fn generator(
 
 /* these ones don't really need commenting they're pretty self-explanatory functions. */
 pub fn intgen(length: u8, mut string: String) -> String {
-    let mut random = rand::thread_rng();
+    let mut random = StdRng::from_os_rng();
 
     for _i in 0..length {
-        let x: u8 = random.gen_range(48..57);
+        let x: u8 = random.random_range(48..57);
         let c: char = x.into();
 
         string.push(c);
@@ -110,12 +110,12 @@ pub fn intgen(length: u8, mut string: String) -> String {
 
 pub fn alphanumeric(length: u8, char_min: u8, char_max: u8, mut string: String) -> String {
     for _i in 0..length {
-        let mut random = rand::thread_rng();
-        let mut x: u8 = random.gen_range(char_min..char_max);
+        let mut random = StdRng::from_os_rng();
+        let mut x: u8 = random.random_range(char_min..char_max);
         let c: char;
 
         while (58..65).contains(&x) || (91..97).contains(&x) {
-            x = random.gen_range(48..123);
+            x = random.random_range(48..123);
         }
 
         c = x.into();
