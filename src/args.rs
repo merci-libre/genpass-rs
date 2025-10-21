@@ -139,7 +139,4 @@ pub struct ExistingArgs {
 pub struct ReadArgs {
     /// Name of the image file to read and decrypt.
     pub name: String,
-    /// If you stored a payload that was unencrypted, use this option to read it.
-    #[arg(long, short)]
-    pub unencrypted: bool,
 }

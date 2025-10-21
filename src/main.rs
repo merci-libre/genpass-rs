@@ -39,8 +39,16 @@ struct Information {
 */
 
 // rewrite this as a method.. use Result Types.
+
 fn throwerrors(exitcode: u8) {
     /*get rid of magic numbers*/
+    // 1: no valid encoding.
+    // 2: Invalid file types
+    // 3: File is not any valid type
+    // 4: does not exist.
+    // 5: payload is longer than 240 bytes
+    // 6: extasc 120 character payload limit
+    // _: not yet implemented
     match exitcode {
         1 => eprintln!(
             "Specified no valid encoding. See 'genpassrs string --help' for valid character types."
@@ -292,9 +300,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             || ReadArgs.name.to_lowercase().contains(".jpeg")
                             || ReadArgs.name.to_lowercase().contains(".png")
                         {
-                            match ReadArgs.unencrypted {
-                                false => steganographic::extract(ReadArgs.name),
-                                true => steganographic::extract_raw(ReadArgs.name),
+                            match steganographic::extract_raw_unencrypted(&ReadArgs.name) {
+                                Ok(_e) => (),
+                                Err(_) => steganographic::extract(&ReadArgs.name),
                             }
                         } else {
                             throwerrors(3);

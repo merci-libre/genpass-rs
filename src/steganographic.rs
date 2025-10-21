@@ -1,5 +1,5 @@
 use core::str;
-use std::{io::Write, path::Path, process::exit};
+use std::{error::Error, io::Write, path::Path, process::exit};
 
 use stegano;
 
@@ -14,10 +14,10 @@ use steganography::{
 * all password handling and things with encryption and embedding into jpeg or png photo occurs in
 * this file. The purpose of this file is to handle all standard input regarding the aes-128 key
 * */
-trait Formatting {
+trait OutputFormatting {
     fn format_output(&mut self, output_fname: String) -> String;
 }
-impl Formatting for String {
+impl OutputFormatting for String {
     fn format_output(&mut self, output_fname: String) -> String {
         let substring = "_output";
         if output_fname.eq(&String::from("")) {
@@ -171,7 +171,6 @@ pub fn store(
 
     // steganography stuff
     let img = file_as_dynamic_image(out_file.clone());
-    dbg!(&vector);
     let enc = steganography::encoder::Encoder::new(&vector, img);
     let result = enc.encode_alpha();
 
@@ -184,30 +183,38 @@ pub fn store(
     return true;
 }
 
-pub fn extract(in_file: String) {
+pub fn extract(in_file: &String) {
     // decrypt from image.
-    let encoded_img = file_as_image_buffer(in_file);
+    let file_buffer = String::from(in_file);
+    let encoded_img = file_as_image_buffer(file_buffer);
     let dec = steganography::decoder::Decoder::new(encoded_img);
 
     //password
     let mut attempts = 4;
     while attempts != 0 {
         let out_buffer = dec.decode_alpha();
-        let mut clean_buffer: Vec<u8> = out_buffer.into_iter().filter(|b| *b != 0xff_u8).collect();
+        let clean_buffer: Vec<u8> = out_buffer.into_iter().filter(|b| *b != 0xff_u8).collect();
         print!("Enter your password: ");
         std::io::stdout().flush().unwrap();
-        let key = read_password().unwrap();
+        let key = match read_password() {
+            Ok(e) => e,
+            Err(e) => {
+                eprintln!("Error parsing key: {e}");
+                exit(1)
+            }
+        };
 
         attempts = clean_buffer.decrypt(key.as_str(), attempts);
     }
 }
 
-pub fn extract_raw(in_file: String) {
-    let encoded_img = file_as_image_buffer(in_file);
+pub fn extract_raw_unencrypted(in_file: &String) -> Result<(), Box<dyn Error>> {
+    let file_buffer = String::from(in_file);
+    let encoded_img = file_as_image_buffer(file_buffer);
     let dec = steganography::decoder::Decoder::new(encoded_img);
     let out_buffer = dec.decode_alpha();
     let clean_buffer: Vec<u8> = out_buffer.into_iter().filter(|b| *b != 0xff_u8).collect();
 
-    let string = String::from_utf8_lossy(&clean_buffer);
-    println!("{}", string);
+    let string = String::from_utf8(clean_buffer)?;
+    Ok(println!("{}", string))
 }
