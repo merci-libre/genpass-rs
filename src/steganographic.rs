@@ -151,10 +151,11 @@ pub fn store(
     output_fname: String,
     payload: String,
     unencrypted: bool,
-) -> bool {
+) -> Result<(), Box<dyn Error>> {
     if payload.len() > 240 {
         // exits the program with an error from the main file because the payload is greater than 240 characters.
-        return false;
+        eprintln!("Payload was larger than 240 bytes/characters! Exiting with code 1.");
+        exit(1)
     }
 
     let mut vector = Vec::from(payload.as_bytes().to_vec());
@@ -163,12 +164,7 @@ pub fn store(
         let key = create_password();
         //end key
         vector = vector.encrypt(key.as_str());
-    } else {
-        ()
     }
-    // set the vector to the payload in bytes, and match whether the payload is encrypted or
-    // not.
-
     // steganography stuff
     let img = file_as_dynamic_image(out_file.clone());
     let enc = steganography::encoder::Encoder::new(&vector, img);
@@ -179,8 +175,7 @@ pub fn store(
     println!("Storing data into {}", out_file);
 
     save_image_buffer(result, out_file.to_string());
-    println!("Saved buffer to {}", out_file);
-    return true;
+    Ok(println!("Saved buffer to {}", out_file))
 }
 
 pub fn extract(in_file: &String) {
