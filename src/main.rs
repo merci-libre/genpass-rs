@@ -1,5 +1,6 @@
 // modules
 mod args;
+mod mime;
 mod steganographic;
 mod stringgeneration;
 mod zxcvbn;
@@ -7,7 +8,7 @@ mod zxcvbn;
 use std::{path::Path, process::exit};
 
 // calls to modules
-use args::*;
+use args::*; // we can safely glob this
 use clap::Parser;
 
 struct Information {
@@ -25,7 +26,6 @@ struct Information {
  The main file just does all the argument and error handling for the majority of the program.
  It comprises of 2 primary functions:
 
- - throwerrors() // just catches and throws unexpected errors should they occur,
  - main() // matches command line arguments to their specified modules. Provides both parameters,
              among other things.
 
@@ -39,29 +39,6 @@ struct Information {
 */
 
 // rewrite this as a method.. use Result Types.
-
-fn throwerrors(exitcode: u8) {
-    /*get rid of magic numbers*/
-    // 1: no valid encoding.
-    // 2: Invalid file types
-    // 3: File is not any valid type
-    // 4: does not exist.
-    // 5: payload is longer than 240 bytes
-    // 6: extasc 120 character payload limit
-    // _: not yet implemented
-    match exitcode {
-        1 => eprintln!(
-            "Specified no valid encoding. See 'genpassrs string --help' for valid character types."
-        ), // No character or invalid type error
-        2 => eprintln!("Error: cannot parse an empty string."), // should rarely happen, but if it does, well...
-        3 => eprintln!("Error: File is not any of the following types: .png, .jpg, .jpeg"),
-        4 => eprintln!("Error: File does not exist, please check the path or see genpassrs steg <subcommand> --help"),
-        5 => eprintln!("Error: Payload is longer than 240 bytes, please keep your payload lower than 240 characters."),
-        6 => eprintln! ("Error: Using the `extasc` command with `generate` generate strings longer than 120 characters.\n   This is due to certain technological limitations with the steganography crate."),
-        _ => eprintln!("genpassrs failed to recognize this specific error. Weird..."), // should rarely happen, but if it does, well...
-    };
-    exit(1);
-}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // parse the arguments for clap
@@ -100,7 +77,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             match StringArgs.encoding.as_str() {
                 "ext" | "extasc" => max = 255,
                 "asc" | "ascii" => max = 127,
-                _ => throwerrors(1),
+                _ => {
+                    eprintln!("Unknown encoding argument, setting to ASCII");
+                    max = 127
+                }
             }
             result_string =
                 stringgeneration::generator(StringArgs.length, min, max, result_string, debug);
@@ -212,7 +192,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         /* Estimate Command */
         Commands::Estimate(EstimateArgs) => {
             if EstimateArgs.string.is_empty() {
-                throwerrors(2);
+                eprintln!("cannot parse an empty string");
+                exit(1)
             }
 
             let score = zxcvbn::estimate(EstimateArgs.string.to_string());
@@ -257,93 +238,69 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         "ext" | "extasc" => 255,
                         "asc" | "ascii" => 127,
                         _ => {
-                            throwerrors(1);
-                            255 // dont ask.
+                            eprintln!("Unknown encoding argument, setting to ASCII");
+                            127
                         }
                     };
-                    result_string =
-                        stringgeneration::generator(NewArgs.length, min, max, result_string, debug);
                     if max == 255 && NewArgs.length > 120 {
                         // error 6: max length for extended ascii/utf-8 cannot exceed 120
                         // characters
-                        throwerrors(6);
+                        eprintln! ("Error: Using the `extasc` command with `generate` generate strings longer than 120 characters.\n
+                                    This is due to certain technological limitations with the steganography crate.");
+                        exit(1)
                     }
+                    result_string =
+                        stringgeneration::generator(NewArgs.length, min, max, result_string, debug);
                     // switch to magic bytes
                     if Path::new(&NewArgs.name).exists() {
-                        if NewArgs.name.to_lowercase().contains(".jpeg")
-                            || NewArgs.name.to_lowercase().contains(".png")
-                            || NewArgs.name.to_lowercase().contains(".jpg")
+                        let filepath = String::from(&NewArgs.name);
+                        mime::check_magic(filepath)?;
                         {
-                            match steganographic::store(
+                            steganographic::store(
                                 NewArgs.name,
                                 NewArgs.output,
                                 result_string.clone(),
                                 NewArgs.unencrypted,
-                            ) {
-                                true => (),
-                                // error 5: longer than 240 characters.
-                                false => throwerrors(5),
-                            }
-                        } else {
-                            // error 3: invalid file extension.
-                            throwerrors(3);
+                            )?;
                         }
                     } else {
-                        // error 4: file does not exist.
-                        throwerrors(4);
+                        eprintln!("file does not exist");
+                        exit(1)
                     }
                 }
                 ImageCommands::Read(ReadArgs) => {
-                    if Path::new(&ReadArgs.name).exists() {
+                    let filepath = String::from(&ReadArgs.name);
+                    mime::check_magic(filepath)?;
+                    match Path::new(&ReadArgs.name).exists() {
                         //switch to magic bytes by v2
-                        if ReadArgs.name.to_lowercase().contains(".jpg")
-                            || ReadArgs.name.to_lowercase().contains(".jpeg")
-                            || ReadArgs.name.to_lowercase().contains(".png")
-                        {
-                            match steganographic::extract_raw_unencrypted(&ReadArgs.name) {
-                                Ok(_e) => (),
-                                Err(_) => steganographic::extract(&ReadArgs.name),
-                            }
-                        } else {
-                            throwerrors(3);
+                        true => match steganographic::extract_raw_unencrypted(&ReadArgs.name) {
+                            Ok(_e) => (),
+                            Err(_) => steganographic::extract(&ReadArgs.name),
+                        },
+                        false => {
+                            eprintln!("file does not exist");
+                            exit(1)
                         }
-                    } else {
-                        throwerrors(4);
                     }
                 }
                 ImageCommands::Embed(ExistingArgs) => {
                     if Path::new(&ExistingArgs.name).exists() {
-                        // switch to magic bytes by v2.
-                        if ExistingArgs.name.to_lowercase().contains(".jpg")
-                            || ExistingArgs.name.to_lowercase().contains(".png")
-                            || ExistingArgs.name.to_lowercase().contains(".jpeg")
-                        {
-                            match steganographic::store(
-                                ExistingArgs.name,
-                                ExistingArgs.output,
-                                ExistingArgs.payload,
-                                ExistingArgs.unencrypted,
-                                // See documentation for how this function works.
-                            ) {
-                                true => (),
-                                // error 5: longer than 240 characters.
-                                false => throwerrors(5),
-                            }
-                        } else {
-                            // error 3: invalid file extension.
-                            throwerrors(3);
+                        let filepath = String::from(&ExistingArgs.name);
+                        mime::check_magic(filepath)?;
+                        match steganographic::store(
+                            ExistingArgs.name,
+                            ExistingArgs.output,
+                            ExistingArgs.payload,
+                            ExistingArgs.unencrypted,
+                            // See documentation for how this function works.
+                        ) {
+                            Ok(_) => (),
+                            Err(e) => eprintln!("{} experienced an error: {e}", info.name),
                         }
-                    } else {
-                        // error 4: file does not exist.
-                        throwerrors(4);
                     }
                 }
             }
         }
     }
-
-    if result_string != "" {
-        print!("{result_string}\n");
-    }
-    Ok(())
+    Ok(print!("{result_string}\n"))
 }
