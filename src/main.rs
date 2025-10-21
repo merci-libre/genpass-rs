@@ -38,14 +38,12 @@ struct Information {
 
 */
 
-// rewrite this as a method.. use Result Types.
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // parse the arguments for clap
     let args = GenpassArgs::parse();
     let info: Information = Information {
         name: String::from("genpass-rs"),
-        version: String::from("1.4.0"),
+        version: String::from("1.5.0"),
         author: String::from("Westwardfishdme/Finch"),
         contact: String::from("westwardfishme@gmail.com"),
     };
