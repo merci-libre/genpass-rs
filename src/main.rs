@@ -43,7 +43,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = GenpassArgs::parse();
     let info: Information = Information {
         name: String::from("genpass-rs"),
-        version: String::from("1.5.0"),
+        version: String::from("1.5.1"),
         author: String::from("Westwardfishdme/Finch"),
         contact: String::from("westwardfishme@gmail.com"),
     };
@@ -288,7 +288,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         match steganographic::store(
                             ExistingArgs.name,
                             ExistingArgs.output,
-                            ExistingArgs.payload,
+                            ExistingArgs.payload.to_string(),
                             ExistingArgs.unencrypted,
                             // See documentation for how this function works.
                         ) {
