@@ -124,7 +124,7 @@ pub struct NewArgs {
 pub struct ExistingArgs {
     /// String to encode into image.
     #[arg(long, short)]
-    pub payload: String,
+    pub payload: MaybeStdin<String>,
     /// Use this option to embed the message into the image without any encryption.
     ///
     /// (DANGEROUS FOR STORING PASSWORDS!)
