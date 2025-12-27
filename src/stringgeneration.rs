@@ -1,4 +1,3 @@
-use rand::{rngs::StdRng, Rng, SeedableRng};
 /*
 * [stringgeneration.rs]
 *
@@ -7,18 +6,16 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 * up to 2^8 (0-255).
 *
 * There are seperate functions for separate needs, for example-- the first function below: `fn generator()`
-* specifically creates passwords with the highest amount of entropy that this program can allow. It
-* does this in a atypical manner.
+* specifically creates passwords with the highest amount of entropy that this program can allow.
 *
-* You see, the biggest issue I had when originally trying to figure out how to manage characters in
-* the range >127 was that they account for 2 bytes, i.e. char: 175 = 2 bytes, while char: 124 = 1 byte).
-*
-* As you can imagine, that can be pretty frustrating if you're having to check if a string's length
-* is at '15' because String::length() calculates the bytes within an array.
+* UTF-8 umlauts and other accent marks are appended onto vowels, but also can just directly be
+* referrenced directly. This program's password generation technique takes advantage of this when
+* generating random UTF-8 in the values above 127 (standard ascii range).
 *
 * */
 
-use std::{io, thread, time};
+use rand::{rngs::StdRng, Rng, SeedableRng};
+use std::{io, thread, time, u8};
 /* As of v.1.0.5, you don't need to uncomment any code for debugging purposes.*/
 fn testing(string: String, char_value: u8, char_count: i16, target_bytesize: i16, truecount: u16) {
     let mut t = term::stdout().unwrap();
@@ -36,7 +33,9 @@ fn testing(string: String, char_value: u8, char_count: i16, target_bytesize: i16
 }
 
 pub fn generator(
-    //O(n)
+    /* generates a CSPRNG safe string.
+     * may be rewritten as a method.
+     * */
     length: u8, // length of the password, cannot exceed 255 and must be an 8-bit unsigned integer
     char_min: u8, // minimum value that the generator can generate. Must be an 8-bit unsigned
     // integer.
@@ -50,33 +49,27 @@ pub fn generator(
     let max_size: i16 = target_bytesize * 2;
     let mut truecount: u16 = 0;
 
-    /* [about the variables]
-     *
-     * bytesize:i16= accounts for the current amount of bytes the program successfully generates.
-     * target_bytesize: the length that the user had specified.
-     * max_size: keeps the actual target value in bytes.
-     *
-     *
-     * max_size needs to always be twice the size of the target bytes, because a single character
-     * can account for 2 bytes, so if I only was to generate 15 characters of characters above
-     * char: 127, the maximum size of the buffer can only be 30 bytes.
-     *
-     * You'll see how the logic works in the `while` loop below.
-     *
-     * */
+    // generate character list to pull from.
+    let mut charlist: Vec<char> = Vec::new();
+
+    for i in char_min..127 {
+        charlist.push(i as char);
+    }
+    // generates extasc if set as a parameter, and with a 'pwetty pwease'
+    if char_max == 255 {
+        for i in 161..u8::MAX {
+            charlist.push(i as char);
+        }
+    }
 
     let mut random = StdRng::from_os_rng();
+
     while bytesize != target_bytesize {
         // continuously generates random characters until the target_bytesize is reached.
-        let mut x: u8 = random.random_range(char_min..char_max);
-        let c: char;
+        let x: usize = random.random_range(0..charlist.len());
+        let c: &char = charlist.as_slice().get(x).unwrap();
 
-        //if the character generated is an escape code, or unused table entry: regenerate.
-        while (127..161).contains(&x) {
-            x = random.random_range(char_min..char_max);
-        }
-        c = x.into();
-        string.push(c);
+        string.push(*c);
 
         // count the current bytes and keeps track of the target bytesize.
         if x > 128 && target_bytesize < max_size {
@@ -89,7 +82,13 @@ pub fn generator(
         /* debugging stuff again. Shows password generation.*/
         if debug {
             truecount += 1;
-            testing(string.clone(), x, bytesize, target_bytesize, truecount);
+            testing(
+                string.clone(),
+                x as u8,
+                bytesize,
+                target_bytesize,
+                truecount,
+            );
         }
     }
     return string;
