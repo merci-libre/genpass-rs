@@ -69,14 +69,13 @@ impl OutputFormatting for String {
 }
 
 trait ClassicEncryption {
-    fn encrypt(&mut self, key: &str) -> Vec<u8>;
+    fn encrypt(self, key: &str) -> Result<Vec<u8>, Box<dyn Error>>;
     fn decrypt(self, key: &str, count: u8) -> u8;
 }
 
 impl ClassicEncryption for Vec<u8> {
-    fn encrypt(&mut self, key: &str) -> Vec<u8> {
-        let payload = self.clone();
-        let length: usize = payload.len() as usize;
+    fn encrypt(mut self, key: &str) -> Result<Vec<u8>, Box<dyn Error>> {
+        let length: usize = self.len();
         let excess: usize = length % 16;
         /*find the excess size of inputted string, if >0, pad the rest of the string with zeroes for encryption.*/
         if excess > 0 {
@@ -84,19 +83,12 @@ impl ClassicEncryption for Vec<u8> {
                 self.push(0);
             }
         }
-        let conversion = match String::from_utf8(payload) {
-            Ok(v) => v,
-            Err(_e) => {
-                eprintln!("Error: Something went wrong encrypting the payload!");
-                exit(1)
-            } // if process to convert vector back into a string fails, exit out of the program.
-        };
-        let encrypted = stegano::utils::encrypt_payload(key, &conversion);
-        return encrypted; // finish
+        let encrypted = stegano::utils::encrypt_payload(key, &String::from_utf8(self)?);
+        Ok(encrypted) // finish
     }
     fn decrypt(self, key: &str, count: u8) -> u8 {
         let decrypted = stegano::utils::decrypt_data(key, &self);
-        let conversion = match str::from_utf8(&decrypted) {
+        let conversion = match String::from_utf8(decrypted) {
             Ok(v) => v,
             Err(_e) => {
                 if count > 1 {
@@ -110,18 +102,18 @@ impl ClassicEncryption for Vec<u8> {
     }
 }
 
-fn create_password() -> String {
-    let mut key = String::new();
+fn create_password() -> Result<String, Box<dyn Error>> {
+    let mut key: String;
     loop {
         print!("Enter your password (Must be 6-16 characters): ");
-        std::io::stdout().flush().unwrap();
-        key = read_password().unwrap();
-        std::io::stdout().flush().unwrap();
+        std::io::stdout().flush()?;
+        key = read_password()?;
+        std::io::stdout().flush()?;
 
         print!("Please re-enter your password: ");
-        std::io::stdout().flush().unwrap();
-        let key2 = read_password().unwrap();
-        std::io::stdout().flush().unwrap();
+        std::io::stdout().flush()?;
+        let key2 = read_password()?;
+        std::io::stdout().flush()?;
 
         if key == key2 && key.len() > 5 {
             break;
@@ -143,7 +135,7 @@ fn create_password() -> String {
             key.clear();
         }
     }
-    return key;
+    Ok(key)
 }
 
 pub fn store(
@@ -161,9 +153,9 @@ pub fn store(
     let mut vector = Vec::from(payload.as_bytes().to_vec());
     if !unencrypted {
         // create a password
-        let key = create_password();
+        let key = create_password()?;
         //end key
-        vector = vector.encrypt(key.as_str());
+        vector = vector.encrypt(key.as_str())?;
     }
     // steganography stuff
     let img = file_as_dynamic_image(out_file.clone());
@@ -203,13 +195,13 @@ pub fn extract(in_file: &String) {
     }
 }
 
-pub fn extract_raw_unencrypted(in_file: &String) -> Result<(), Box<dyn Error>> {
-    let file_buffer = String::from(in_file);
-    let encoded_img = file_as_image_buffer(file_buffer);
+pub fn extract_raw_unencrypted(path: &String) -> Result<String, Box<dyn Error>> {
+    eprintln!("attempting raw extraction...");
+    let encoded_img = file_as_image_buffer(String::from(path));
     let dec = steganography::decoder::Decoder::new(encoded_img);
     let out_buffer = dec.decode_alpha();
     let clean_buffer: Vec<u8> = out_buffer.into_iter().filter(|b| *b != 0xff_u8).collect();
 
     let string = String::from_utf8(clean_buffer)?;
-    Ok(println!("{}", string))
+    Ok(string)
 }
