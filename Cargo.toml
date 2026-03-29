@@ -1,5 +1,6 @@
 [package]
 name = "genpassrs"
+authors = ["Jonathan Villanueva <westwardfishdme@gmail.com>"]
 version = "1.5.1"
 edition = "2021"
 

@@ -10,13 +10,11 @@ use std::{path::Path, process::exit};
 // calls to modules
 use args::*; // we can safely glob this
 use clap::Parser;
+use std::env;
 
-struct Information {
-    name: String,
-    version: String,
-    author: String,
-    contact: String,
-}
+const BIN_NAME: &str = env!("CARGO_PKG_NAME");
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+const AUTHOR: &str = env!("CARGO_PKG_AUTHORS");
 /*
  To make things a bit more readable, I rewrote most of my comments inside of the program,
  because I completely forgot what most things did in here. I realized that most of my comments
@@ -41,16 +39,7 @@ struct Information {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // parse the arguments for clap
     let args = GenpassArgs::parse();
-    let info: Information = Information {
-        name: String::from("genpass-rs"),
-        version: String::from("1.5.1"),
-        author: String::from("Westwardfishdme/Finch"),
-        contact: String::from("westwardfishme@gmail.com"),
-    };
-    eprintln!(
-        "{} v.{} \n- Developed by: {}\n- Contact: {}\n",
-        info.name, info.version, info.author, info.contact
-    );
+    eprintln!("{} v.{} \n- Developed by: {}\n", BIN_NAME, VERSION, AUTHOR);
 
     let mut result_string: String = String::new();
     let debug = args.debug;
@@ -62,7 +51,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let min: u8;
     let mut max: u8 = 0;
 
-    // argument match cases
+    // argument match cases, need to refactor to reinforce DRY principles?
     match command {
         /* String Command */
         Commands::String(StringArgs) => {
@@ -272,9 +261,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     match Path::new(&ReadArgs.name).exists() {
                         //switch to magic bytes by v2
                         true => match steganographic::extract_raw_unencrypted(&ReadArgs.name) {
-                            Ok(_e) => (),
-                            Err(_) => steganographic::extract(&ReadArgs.name),
+                            Ok(password) => println!("{password}"),
+                            Err(e) => {
+                                eprintln!("{e}");
+                                steganographic::extract(&ReadArgs.name)
+                            }
                         },
+
                         false => {
                             eprintln!("file does not exist");
                             exit(1)
@@ -293,7 +286,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             // See documentation for how this function works.
                         ) {
                             Ok(_) => (),
-                            Err(e) => eprintln!("{} experienced an error: {e}", info.name),
+                            Err(e) => eprintln!("{} experienced an error: {e}", BIN_NAME),
                         }
                     }
                 }
