@@ -70,7 +70,7 @@ impl OutputFormatting for String {
 
 trait ClassicEncryption {
     fn encrypt(self, key: &str) -> Result<Vec<u8>, Box<dyn Error>>;
-    fn decrypt(self, key: &str, count: u8) -> u8;
+    fn decrypt(self, key: String) -> Option<String>;
 }
 
 impl ClassicEncryption for Vec<u8> {
@@ -83,22 +83,21 @@ impl ClassicEncryption for Vec<u8> {
                 self.push(0);
             }
         }
-        let encrypted = stegano::utils::encrypt_payload(key, &String::from_utf8(self)?);
+        let password = &String::from_utf8_lossy(&self);
+        // this breaks if modified-- do not touch.
+        let encrypted = stegano::utils::encrypt_payload(key, password);
         Ok(encrypted) // finish
     }
-    fn decrypt(self, key: &str, count: u8) -> u8 {
-        let decrypted = stegano::utils::decrypt_data(key, &self);
-        let conversion = match String::from_utf8(decrypted) {
+    fn decrypt(self, key: String) -> Option<String> {
+        let decrypted = stegano::utils::decrypt_data(key.as_str(), &self);
+        let password = match String::from_utf8(decrypted) {
             Ok(v) => v,
-            Err(_e) => {
-                if count > 1 {
-                    eprintln!("Wrong password. You have ({}) more attempts.", count - 1);
-                }
-                return count - 1;
-            } // if process to convert vector back into a string fails, exit out of the program.
+            Err(_) => {
+                eprintln!("Bad password!");
+                return None;
+            }
         };
-        println!("\n{}", conversion);
-        return 0;
+        Some(password)
     }
 }
 
@@ -182,7 +181,11 @@ pub fn extract(in_file: &String) {
         let out_buffer = dec.decode_alpha();
         let clean_buffer: Vec<u8> = out_buffer.into_iter().filter(|b| *b != 0xff_u8).collect();
         print!("Enter your password: ");
-        std::io::stdout().flush().unwrap();
+
+        std::io::stdout()
+            .flush()
+            .expect("Failed to flush the screen");
+
         let key = match read_password() {
             Ok(e) => e,
             Err(e) => {
@@ -191,7 +194,16 @@ pub fn extract(in_file: &String) {
             }
         };
 
-        attempts = clean_buffer.decrypt(key.as_str(), attempts);
+        match clean_buffer.decrypt(key) {
+            Some(v) => {
+                println!("{}", v);
+                attempts = 0;
+            }
+            None => {
+                eprintln!("Password failed to decrypt. You have {attempts} attempt(s) remaining.");
+                attempts -= 1
+            }
+        }
     }
 }
 
