@@ -124,7 +124,7 @@ pub fn generate(password_options: Password, length: u8, debug: bool) -> Generato
     // generate character list to pull from.
     let mut valid_charlist: Vec<char> = Vec::new();
 
-    let char_min = password_options.min();
+    let mut char_min = password_options.min();
     let char_max = password_options.max();
 
     match password_options.password_type() {
@@ -149,6 +149,17 @@ pub fn generate(password_options: Password, length: u8, debug: bool) -> Generato
             }
         }
         PasswordType::Alphanumeric => {
+            // i forgot about the special chars between numbers and non-numbers. whoops.
+            if char_min == 48 {
+                let numbers: std::ops::RangeInclusive<u8> = char_min..=57;
+
+                for i in numbers {
+                    valid_charlist.push(i as char);
+                }
+
+                char_min = 65
+            }
+
             for i in char_min..=char_max {
                 valid_charlist.push(i as char);
             }

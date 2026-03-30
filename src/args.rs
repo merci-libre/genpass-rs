@@ -197,13 +197,10 @@ pub trait CheckArgs {
 impl CheckArgs for AlphaArgs {
     fn check_arguments(self) -> Password {
         let mut min: u8 = 48;
-        let mut max: u8 = 122;
+        let max: u8 = 90;
 
         if self.alphabet {
             min = 65;
-        }
-        if self.smallcase || self.upper {
-            max = 90;
         }
 
         let mut password_struct = Password::new();
