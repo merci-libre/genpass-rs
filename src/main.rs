@@ -68,7 +68,6 @@ fn enumerate_image_subs(subcommands: ImageCommands, debug: bool) -> Result<(), B
         }
 
         ImageCommands::Embed(existing_args) => {
-            // this function is broken right now-- planned revision coming soon.
             let filepath = String::from(&existing_args.name);
             if Path::new(&filepath).exists() {
                 let filepath = String::from(&existing_args.name);
@@ -183,7 +182,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .get_password()
         .to_owned();
     if uppercase {
-        result_string = result_string.to_lowercase();
+        result_string = result_string.to_uppercase();
     }
     if lowercase {
         result_string = result_string.to_lowercase();
