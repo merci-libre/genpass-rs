@@ -1,5 +1,5 @@
-use rand::{rngs::StdRng, Rng, SeedableRng};
-use std::{io, thread, time};
+use rand::Rng;
+use std::{io, ops::RangeInclusive, thread, time};
 
 use crate::args::{Password, PasswordType};
 
@@ -79,7 +79,17 @@ impl GeneratorDetails {
     }
 }
 
-fn generate_password(length: u8, character_list: Vec<char>) -> GeneratorDetails {
+#[derive(Debug, PartialEq)]
+enum GenerationType {
+    Ascii,
+    ExtAscii,
+}
+
+fn generate_password(
+    length: u8,
+    character_list: Vec<char>,
+    generation_type: GenerationType,
+) -> GeneratorDetails {
     //! The actual password engine that genpass-rs uses, returns the generator
     //! details which is used in the `test()` modules and from versions 2.0.0+ on will be the
     //! defacto method of storing passwords.
@@ -88,31 +98,45 @@ fn generate_password(length: u8, character_list: Vec<char>) -> GeneratorDetails 
     let max_size: u16 = target_bytesize * 2;
     let mut truecount: u8 = 0;
 
-    let mut final_password: String = String::new();
-    let mut random = StdRng::from_os_rng();
-    while bytesize != target_bytesize {
-        let x: usize = random.random_range(0..character_list.len());
-        let c: char = character_list.get(x).unwrap().to_owned();
+    let mut random = rand::rng();
+    let mut bytes = vec![0 as char; length as usize];
+    match generation_type {
+        GenerationType::Ascii => {
+            for i in 0..length {
+                let random_index: usize = random.random_range(0..character_list.len());
+                let selected_character: &char = character_list.get(random_index).unwrap();
+                bytes[i as usize] = *selected_character;
+            }
+        }
+        GenerationType::ExtAscii => {
+            while bytesize != target_bytesize {
+                let random_index: usize = random.random_range(0..character_list.len());
+                let selected_character: &char = character_list.get(random_index).unwrap();
 
-        final_password.push(c);
+                bytes[truecount as usize] = *selected_character;
 
-        // count the current bytes and keeps track of the target bytesize.
-        if x > 128 && target_bytesize < max_size {
-            target_bytesize += 1;
-            bytesize += 2;
-            truecount += 1;
-        } else {
-            bytesize += 1;
-            truecount += 1;
+                // count the current bytes and keeps track of the target bytesize.
+                if *selected_character as u8 > 128 && target_bytesize < max_size {
+                    target_bytesize += 1;
+                    bytesize += 2;
+                } else {
+                    bytesize += 1;
+                }
+                truecount += 1;
+            }
         }
     }
-    GeneratorDetails::new(
+    let final_password: String = bytes.iter().collect();
+    if generation_type == GenerationType::Ascii {
+        truecount = final_password.len() as u8;
+    }
+    return GeneratorDetails::new(
         target_bytesize,
         truecount,
         bytesize,
         max_size,
         final_password,
-    )
+    );
 }
 
 #[doc(hidden)]
@@ -126,6 +150,7 @@ pub fn generate(password_options: Password, length: u8, debug: bool) -> Generato
 
     let mut char_min = password_options.min();
     let char_max = password_options.max();
+    let mut gentype = GenerationType::Ascii;
 
     match password_options.password_type() {
         PasswordType::Regular => {
@@ -133,35 +158,49 @@ pub fn generate(password_options: Password, length: u8, debug: bool) -> Generato
                 valid_charlist.push(i as char);
             }
 
-            // generates extasc if set as a parameter, and with a 'pwetty pwease',
-            let char_ranges: [std::ops::RangeInclusive<i16>; 4] =
-            // I used hex values for ease of reading. It's not true extended ascii--
-            // but utf-8 up to value 255. These ranges essentially remove all non-printable
-            // characters from being pushed to our character list.
-                [0xa1..=0xac, 0xae..=0xb3, 0xb5..=0xb7, 0xb9..=0xff];
             if char_max == 255 {
+                // generates extasc if set as a parameter, and with a 'pwetty pwease',
+                let char_ranges: [std::ops::RangeInclusive<i16>; 4] =
+                    [0xa1..=0xac, 0xae..=0xb3, 0xb5..=0xb7, 0xb9..=0xff];
+                // I used hex values for ease of reading. It's not true extended ascii--
+                // but utf-8 up to value 255. These ranges essentially remove all non-printable
+                // characters from being pushed to our character list.
                 for x in char_ranges {
                     for i in x {
                         // looks scary-- but will always works as intended.
                         valid_charlist.push(i as u8 as char);
                     }
                 }
+                gentype = GenerationType::ExtAscii
             }
         }
-        PasswordType::Alphanumeric => {
+        PasswordType::Alphanumeric(string_args) => {
             // i forgot about the special chars between numbers and non-numbers. whoops.
             if char_min == 48 {
                 let numbers: std::ops::RangeInclusive<u8> = char_min..=57;
-
                 for i in numbers {
                     valid_charlist.push(i as char);
                 }
-
-                char_min = 65
+                char_min = 65;
             }
 
-            for i in char_min..=char_max {
-                valid_charlist.push(i as char);
+            // ascii char ranges
+            let capital_range = char_min..=90;
+            let lowercase_range = 97..=char_max;
+
+            let char_ranges: [RangeInclusive<u8>; 2] = [capital_range, lowercase_range];
+
+            if string_args.upper || string_args.smallcase {
+                for i in char_ranges[0].to_owned() {
+                    valid_charlist.push(i as char);
+                }
+            } else {
+                for i in char_ranges[0].to_owned() {
+                    valid_charlist.push(i as char);
+                }
+                for i in char_ranges[1].to_owned() {
+                    valid_charlist.push(i as char);
+                }
             }
         }
         PasswordType::Numeric => {
@@ -170,7 +209,7 @@ pub fn generate(password_options: Password, length: u8, debug: bool) -> Generato
             }
         }
     }
-    let password_details = generate_password(length, valid_charlist);
+    let password_details = generate_password(length, valid_charlist, gentype);
 
     if debug {
         dbg!(&password_options);
@@ -182,7 +221,7 @@ pub fn generate(password_options: Password, length: u8, debug: bool) -> Generato
 // tests
 mod tests {
     #[allow(dead_code)]
-    const TESTCOUNT: std::ops::Range<usize> = 0..50000;
+    const TESTCOUNT: std::ops::Range<usize> = 0..100_000;
 
     use super::GeneratorDetails;
     use crate::args::*;
@@ -196,18 +235,29 @@ mod tests {
     #[test]
     fn test_ascii_string_generation() {
         let mut previous_string = String::new();
-        for _ in TESTCOUNT {
+        for i in TESTCOUNT {
             let generation_type = StringArgs {
                 encoding: String::from("ascii"),
-                space: false,
+                space: true,
                 length: 32,
             };
 
             let password = start_test(generation_type.to_owned());
             let a = password.len();
-            let b = generation_type.length;
+            let b = password.get_password().len();
+
+            let pwd_byte_size = password.len() as usize;
+            let mut expected: usize = generation_type.length as usize * size_of::<u8>();
+
+            if i > 1 {
+                expected = previous_string.len();
+            }
             assert_eq!(
-                a, b,
+                pwd_byte_size, expected,
+                "bad string {pwd_byte_size}, {expected}"
+            );
+            assert_eq!(
+                a, b as u8,
                 "failed to determine the real size of the string {a} != {b}"
             );
             assert_ne!(previous_string, *password.get_password());
@@ -247,6 +297,7 @@ mod tests {
             for i in password.get_password().chars() {
                 let _: u8 = i.to_string().parse::<u8>().expect("was not a number");
             }
+            assert_eq!(password.len(), 20);
             assert_ne!(previous_string, *password.get_password());
             previous_string = password.get_password().clone()
         }

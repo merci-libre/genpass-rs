@@ -58,7 +58,7 @@ pub struct StringArgs {
     pub length: u8,
 }
 
-#[derive(Clone, Debug, Args)]
+#[derive(Clone, Copy, Debug, Args)]
 pub struct AlphaArgs {
     /// Print only letters
     #[arg(long, short)]
@@ -144,7 +144,7 @@ pub struct ReadArgs {
 
 #[derive(Debug, Clone, Copy)]
 pub enum PasswordType {
-    Alphanumeric,
+    Alphanumeric(AlphaArgs),
     Numeric,
     Regular,
 }
@@ -197,7 +197,7 @@ pub trait CheckArgs {
 impl CheckArgs for AlphaArgs {
     fn check_arguments(self) -> Password {
         let mut min: u8 = 48;
-        let max: u8 = 90;
+        let max: u8 = 122;
 
         if self.alphabet {
             min = 65;
@@ -206,7 +206,7 @@ impl CheckArgs for AlphaArgs {
         let mut password_struct = Password::new();
         password_struct = password_struct.set_min(min);
         password_struct = password_struct.set_max(max);
-        password_struct = password_struct.set_passwordtype(PasswordType::Alphanumeric);
+        password_struct = password_struct.set_passwordtype(PasswordType::Alphanumeric(self));
 
         return password_struct;
     }
