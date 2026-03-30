@@ -8,16 +8,20 @@ The official page for Merci-Libre's genpass-rs. Created by [westwardfishdme](htt
 There is now a precompiled binary attached to all releases <= 1.0.2
 You can simply run the .exe in a command prompt to use the software as desired.
 
-The binary was compiled using a x86_64 bit processor, so be warned!
+The binary was compiled using for x86_64 systems. Can be obtained in the [releases tab](https://github.com/merci-libre/genpass-rs/releases)
 
-### Manual Installation:
+### Linux:
+
+There is also a binary for x86_64 systems. inside of the [releases tab](https://github.com/merci-libre/genpass-rs/releases) :)
+
+### From Source:
 
 1. Install rust from https://www.rust-lang.org/tools/install
 2. Use `cargo build --release` to compile.
 3. get the binary from `genpass-rs/target/build/genpassrs`
 4. you figure out the rest :)
 
-Read more about the project on my [website](https://westwardfishd.me/projects/genpass-rs)
+Read more about the project on my [website](https://westwardfishdme.github.io)
 
 ## Usage
 
@@ -78,35 +82,6 @@ This command will generate a new passphrase with both ascii and extended ascii o
 
 # Modules
 
-Genpassrs supports module usage outside of genpass for whatever project you are working on. Of course, you can use a wrapper to use genpassrs in any project.
-
-## Using modules
-Genpassrs includes string generation AND integer generation in stringgeneration.rs
-
-The following functions are modular, and can be used in any application or program:
-- generator(length:u8, char_encodingMinValue:u8, char_encodingMaxValue:u8, outputString:String) -> returns a string of specified length.
-- intgen(length:u8, outputString:String) -> returns a string of integers of specified length.
-- alphanumeric(length:u8, char_min:u8, char_max:u8, outputString:String)-> returns a string of alphanumeric characters.
-- estimate(input:String)-> outputs a number 1 through 4, see (https://docs.rs/zxcvbn/latest/zxcvbn/) for more details.
-
-
-to use them, simply copy the desired files into your project, and add them in as modules.
-
-e.g.:
-
-```
-[ in *your* project directory: `main.rs`,`stringgeneration.rs` ]
-use mod stringgeneration;
-
-fn main(){
-  let mut string=String::new(); // create a mutable string
-  string=stringgeneration::generator(30,32,127,string); //example of using the generator function
-
-  println!("{}", string);
-}
-```
-
-This will create a string of length 30, use spaces in the generation, and generate characters all the way up to character 127 (z). For more information on character codes, please see: [the wikipedia article here](https://en.wikipedia.org/wiki/ASCII#Printable_character_table).
-
-This can be used in a plethora of ways-- according to your use case. 
+~~Genpassrs supports module usage outside of genpass for whatever project you are working on. Of course, you can use a wrapper to use genpassrs in any project.~~
+(this is currently broken in the current patch-- will future updates will make modules available again soon.)
 
