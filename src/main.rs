@@ -187,5 +187,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if lowercase {
         result_string = result_string.to_lowercase();
     }
-    Ok(println!("{result_string}\n"))
+    Ok(println!("{result_string}"))
 }
