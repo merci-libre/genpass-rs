@@ -35,7 +35,7 @@ Read more about the project on my [website](https://westwardfishdme.github.io)
 
 `genpassrs alphanumeric -l 25` : generates an alphanumeric string of length 25. 
 
-`genpassrs alphanumeric -a 25` : generates a string of length 25 of only letters of varying cases.
+`genpassrs alphanumeric -a -l 25` : generates a string of length 25 of only letters of varying cases.
 
 `genpassrs alphanumeric -s -l 25` : generates a string of length 25 with lowercase letters.
 
