@@ -1,17 +1,17 @@
 // modules
 mod args;
+mod modules;
 
+// standard library
 use std::{error::Error, path::Path, process::exit};
 
 // calls to modules
-mod modules;
-use args::{CheckArgs, Commands, GenpassArgs, ImageCommands};
+use args::{CheckArgs, Commands, GenpassArgs, ImageCommands, Password, PasswordType};
 use clap::Parser;
 use modules::{passwords, steganographic};
 use std::env;
 
-use crate::args::Password;
-
+// package info
 const BIN_NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const AUTHOR: &str = env!("CARGO_PKG_AUTHORS");
@@ -89,6 +89,28 @@ fn enumerate_image_subs(subcommands: ImageCommands, debug: bool) -> Result<(), B
     Ok(())
 }
 
+fn do_forever(arguments: Password, length: u8, debug: bool) {
+    loop {
+        let password_info = passwords::generator::generate(arguments, length, debug);
+        match arguments.password_type() {
+            PasswordType::Alphanumeric(alphabetic_password) => {
+                let mut password = password_info.get_password().to_owned();
+                if alphabetic_password.upper && !alphabetic_password.smallcase {
+                    password = password.to_uppercase();
+                }
+                if alphabetic_password.smallcase && !alphabetic_password.upper {
+                    password = password.to_lowercase();
+                }
+                println!("\n{}", password);
+            }
+            _ => {
+                let password = password_info.get_password().to_owned();
+                println!("\n{}", password);
+            }
+        }
+    }
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // parse the arguments for clap
     let args = GenpassArgs::parse();
@@ -111,6 +133,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::String(regular_password_options) => {
             arguments = regular_password_options.to_owned().check_arguments();
             length = regular_password_options.length;
+            if pass_loop {
+                do_forever(arguments, length, debug);
+            }
         }
 
         /* Integer Command */
@@ -119,12 +144,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             length = integer_password.length;
 
             if pass_loop {
-                loop {
-                    let password_info = passwords::generator::generate(arguments, length, debug);
-                    let password = password_info.get_password().to_owned();
-
-                    println!("\n{}", password);
-                }
+                do_forever(arguments, length, debug);
             }
         }
         /* Alphanumeric Command */
@@ -145,17 +165,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             if pass_loop {
-                loop {
-                    let password_info = passwords::generator::generate(arguments, length, debug);
-                    let mut password = password_info.get_password().to_owned();
-                    if alphabetic_password.upper && !alphabetic_password.smallcase {
-                        password = password.to_uppercase();
-                    }
-                    if alphabetic_password.smallcase && !alphabetic_password.upper {
-                        password = password.to_lowercase();
-                    }
-                    println!("\n{}", password);
-                }
+                do_forever(arguments, length, debug);
             }
         }
 
