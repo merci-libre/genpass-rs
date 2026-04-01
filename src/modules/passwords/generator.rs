@@ -87,7 +87,7 @@ enum GenerationType {
 
 fn generate_password(
     length: u8,
-    character_list: Vec<char>,
+    character_list: &Vec<char>,
     generation_type: GenerationType,
 ) -> GeneratorDetails {
     //! The actual password engine that genpass-rs uses, returns the generator
@@ -99,13 +99,16 @@ fn generate_password(
     let mut truecount: u8 = 0;
 
     let mut random = rand::rng();
-    let mut bytes = vec![0 as char; length as usize];
+    let mut bytes = String::new();
+
     match generation_type {
         GenerationType::Ascii => {
-            for i in 0..length {
+            for _ in 0..length {
                 let random_index: usize = random.random_range(0..character_list.len());
+                // safe to call unwrap here, but something is happening with the bytes.
                 let selected_character: &char = character_list.get(random_index).unwrap();
-                bytes[i as usize] = *selected_character;
+                bytes.push(*selected_character);
+                bytesize += 1;
             }
         }
         GenerationType::ExtAscii => {
@@ -113,7 +116,7 @@ fn generate_password(
                 let random_index: usize = random.random_range(0..character_list.len());
                 let selected_character: &char = character_list.get(random_index).unwrap();
 
-                bytes[truecount as usize] = *selected_character;
+                bytes.push(*selected_character);
 
                 // count the current bytes and keeps track of the target bytesize.
                 if *selected_character as u8 > 128 && target_bytesize < max_size {
@@ -126,7 +129,7 @@ fn generate_password(
             }
         }
     }
-    let final_password: String = bytes.iter().collect();
+    let final_password: String = bytes;
     if generation_type == GenerationType::Ascii {
         truecount = final_password.len() as u8;
     }
@@ -154,7 +157,9 @@ pub fn generate(password_options: Password, length: u8, debug: bool) -> Generato
 
     match password_options.password_type() {
         PasswordType::Regular => {
-            for i in char_min..=127 {
+            // accidentally added the delete character-- 126 is the actual max for basic ascii :/
+            // this should fix issue #7
+            for i in char_min..=126 {
                 valid_charlist.push(i as char);
             }
 
@@ -209,12 +214,12 @@ pub fn generate(password_options: Password, length: u8, debug: bool) -> Generato
             }
         }
     }
-    let password_details = generate_password(length, valid_charlist, gentype);
-
+    let password_details = generate_password(length, &valid_charlist, gentype);
     if debug {
-        dbg!(&password_options);
+        dbg!(&password_options, &valid_charlist);
         testing(&password_details);
     }
+
     return password_details;
 }
 
