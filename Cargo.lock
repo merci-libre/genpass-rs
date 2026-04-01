@@ -652,7 +652,7 @@ dependencies = [
 
 [[package]]
 name = "genpassrs"
-version = "2.0.4"
+version = "2.0.4-testing"
 dependencies = [
  "clap",
  "clap-stdin",
