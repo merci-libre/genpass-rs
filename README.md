@@ -1,6 +1,5 @@
-
-# Merci-Libre's Genpass-rs
-The official page for Merci-Libre's genpass-rs. Created by [westwardfishdme](https://github.com/westwardfishdme).
+# Genpass-rs
+The official page for Merci-Libre's genpass-rs. Created by [westwardfishdme](https://github.com/westwardfishdme). Now v2.0!
 
 - [Installation](#Installing)
   - [Windows](#Windows)
