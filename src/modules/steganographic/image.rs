@@ -1,9 +1,14 @@
 use core::str;
-use std::{error::Error, io::Write, path::Path, process::exit};
+use std::{
+    error::Error,
+    io::{Read, Write},
+    path::Path,
+    process::exit,
+};
 
+use console;
 use stegano;
 
-use rpassword::read_password;
 use steganography::{
     self,
     util::{file_as_dynamic_image, file_as_image_buffer, save_image_buffer},
@@ -102,39 +107,51 @@ impl ClassicEncryption for Vec<u8> {
 }
 
 fn create_password() -> Result<String, Box<dyn Error>> {
-    let mut key: String;
-    loop {
-        eprint!("Enter your password (Must be 6-16 characters): ");
-        std::io::stdout().flush()?;
-        key = read_password()?;
-        std::io::stdout().flush()?;
+    let mut password = String::new();
+    eprint!("Enter your password (Must be 6-16 characters): ");
+    let term = console::Term::stderr();
+    let mut low_strength_reask = true;
+    while password.len() < 6 || low_strength_reask {
+        std::io::stderr().flush()?;
+        password = term.read_secure_line()?;
+        std::io::stderr().flush()?;
+
+        // handle passkey length issues...
+        match password.len() {
+            0..6 => {
+                eprint!("Password is less than 6 characters! Please enter a valid password:");
+                password.clear();
+                continue;
+            }
+            6..16 => (),
+            _ => {
+                eprint!("Password is greater than 16 characters! Please enter a valid password:");
+                password.clear();
+                continue;
+            }
+        }
 
         eprint!("Please re-enter your password: ");
-        std::io::stdout().flush()?;
-        let key2 = read_password()?;
-        std::io::stdout().flush()?;
+        std::io::stderr().flush()?;
+        let re_enter = term.read_secure_line()?;
+        std::io::stderr().flush()?;
 
-        if key == key2 && key.len() > 5 {
-            break;
-        } else {
-            // handle passkey length issues...
-            match key.len() {
-                0..6 => {
-                    eprintln!("Password is less than 6 characters! Please re-enter your password")
-                }
-                6..16 => (),
-                _ => eprintln!(
-                    "Password is greater than 16 characters! Please re-enter your password!"
-                ),
-            }
-            // handle passkey mismatch
-            if key != key2 {
-                eprintln!("Passwords did not match! Please re-enter your password.");
-            }
-            key.clear();
+        // handle passkey mismatch
+        if password != re_enter {
+            eprint!("Passwords did not match! Please re-enter your password:");
+            password.clear();
+            continue;
+        }
+
+        low_strength_reask =
+            crate::modules::passwords::zxcvbn::check_password_strength(password.as_str());
+
+        if low_strength_reask {
+            eprint!("\nEnter your password (Must be 6-16 characters): ");
         }
     }
-    Ok(key)
+
+    Ok(password)
 }
 
 pub fn store(
@@ -172,6 +189,7 @@ pub fn extract(in_file: &String) {
     let file_buffer = String::from(in_file);
     let encoded_img = file_as_image_buffer(file_buffer);
     let dec = steganography::decoder::Decoder::new(encoded_img);
+    let term = console::Term::stderr();
 
     // password attempts
     let mut attempts = 4;
@@ -184,7 +202,7 @@ pub fn extract(in_file: &String) {
             .flush()
             .expect("Failed to flush the screen");
 
-        let key = match read_password() {
+        let key = match term.read_secure_line() {
             Ok(e) => e,
             Err(e) => {
                 eprintln!("Error parsing key: {e}");
