@@ -1,0 +1,17 @@
+[package]
+name = "steganography"
+version = "1.1.0"
+authors = ["Teo Voinea <voinea.teodor@gmail.com>"]
+description = "A simple steganography library"
+repository = "https://github.com/teovoinea/steganography"
+homepage = "https://teovoinea.github.io/steganography/"
+readme = "README.md"
+keywords = ["image", "steganography"]
+categories = ["encoding"]
+license = "MIT"
+
+[dependencies]
+image = "0.25.10"
+
+[badges]
+travis-ci = { repository = "teovoinea/steganography" }
