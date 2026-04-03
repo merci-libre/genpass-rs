@@ -1,14 +1,12 @@
-use core::str;
+use super::encrypt::legacy::ClassicEncryption;
+
+use console;
 use std::{error::Error, io::Write, path::Path, process::exit};
 
-use stegano;
-
-use rpassword::read_password;
 use steganography::{
     self,
     util::{file_as_dynamic_image, file_as_image_buffer, save_image_buffer},
 };
-// use stegano's utilities to encrypt a payload with AES-128 Encryption.
 
 /*
 * all password handling and things with encryption and embedding into jpeg or png photo occurs in
@@ -19,135 +17,108 @@ trait OutputFormatting {
 }
 impl OutputFormatting for String {
     fn format_output(&mut self, output_fname: String) -> String {
+        //! Formats the output string to prevent overwriting the
+        //! file at a given path. Outputs should be unique.
         let substring = "_output";
         if output_fname.eq(&String::from("")) {
             self.push_str(substring);
         } else {
             *self = output_fname
         }
-        if self.contains(".png") {
-            *self = self.replace(".png", "");
-        }
-        if self.contains(".jpeg") {
-            *self = self.replace(".jpeg", "");
-        }
 
-        if self.contains(".jpg") {
-            *self = self.replace(".jpg", "");
+        let image_extensions = [".png", ".jpeg", ".jpg"];
+        for extension in image_extensions {
+            if self.contains(extension) {
+                *self = self.replace(extension, "");
+            }
         }
 
         self.push_str(".png");
-        // handle duplicate outputs.
-        if Path::new(&self).exists() {
-            let mut i: u32 = 0;
-            while Path::new(&self).exists() {
-                loop {
-                    if self.contains(".png") {
-                        *self = self.replace(".png", "");
-                    }
-                    let mut new_outputsub = format!("{}{}", substring, i);
-                    let prev_substring: String;
-                    match i {
-                        0 => prev_substring = substring.to_string(),
-                        _ => prev_substring = format!("{}{}", substring, i - 1),
-                    }
-                    if self.contains(new_outputsub.as_str()) {
-                        new_outputsub = format!("{}{}", substring, i);
-                    }
-                    *self = self.replace(prev_substring.as_str(), "");
 
-                    *self = self.replace(substring, "");
-                    self.push_str(new_outputsub.as_str());
-                    break;
-                }
-                self.push_str(".png");
-                i += 1;
+        // handle duplicate outputs.
+        let mut i: i64 = 0;
+
+        // this might be able to be re-written better but it works
+        while Path::new(&self).exists() {
+            let previous_iteration = i - 1;
+
+            //remove .png
+            if self.contains(".png") {
+                *self = self.replace(".png", "");
             }
+
+            let prev_substring: String = match i {
+                0 => substring.to_string(),
+                _ => format!("{}{}", substring, previous_iteration), // i.e. _output1 -> output0
+            };
+
+            *self = self.replace(prev_substring.as_str(), "");
+
+            // add our substring
+            let new_outputsub = format!("{}{}", substring, i);
+            self.push_str(new_outputsub.as_str());
+            self.push_str(".png");
+            i += 1;
         }
         return self.clone();
     }
 }
 
-trait ClassicEncryption {
-    fn encrypt(self, key: &str) -> Result<Vec<u8>, Box<dyn Error>>;
-    fn decrypt(self, key: String) -> Option<String>;
-}
-
-impl ClassicEncryption for Vec<u8> {
-    fn encrypt(mut self, key: &str) -> Result<Vec<u8>, Box<dyn Error>> {
-        let length: usize = self.len();
-        let excess: usize = length % 16;
-        /*find the excess size of inputted string, if >0, pad the rest of the string with zeroes for encryption.*/
-        if excess > 0 {
-            for _i in 0..(16 - excess) {
-                self.push(0);
-            }
-        }
-        let password = &String::from_utf8_lossy(&self);
-        // this breaks if modified-- do not touch.
-        let encrypted = stegano::utils::encrypt_payload(key, password);
-        Ok(encrypted) // finish
-    }
-    fn decrypt(self, key: String) -> Option<String> {
-        let decrypted = stegano::utils::decrypt_data(key.as_str(), &self);
-        let password = match String::from_utf8(decrypted) {
-            Ok(v) => v,
-            Err(_) => {
-                eprintln!("Bad password!");
-                return None;
-            }
-        };
-        Some(password)
-    }
-}
-
 fn create_password() -> Result<String, Box<dyn Error>> {
-    let mut key: String;
-    loop {
-        print!("Enter your password (Must be 6-16 characters): ");
-        std::io::stdout().flush()?;
-        key = read_password()?;
-        std::io::stdout().flush()?;
+    let mut password = String::new();
+    eprint!("Enter your password (Must be 6-16 characters): ");
+    let term = console::Term::stderr();
+    let mut low_strength_reask = true;
+    while password.len() < 6 || low_strength_reask {
+        std::io::stderr().flush()?;
+        password = term.read_secure_line()?;
+        std::io::stderr().flush()?;
 
-        print!("Please re-enter your password: ");
-        std::io::stdout().flush()?;
-        let key2 = read_password()?;
-        std::io::stdout().flush()?;
+        // handle passkey length issues...
+        match password.len() {
+            0..6 => {
+                eprint!("Password is less than 6 characters! Please enter a valid password:");
+                password.clear();
+                continue;
+            }
+            6..16 => (),
+            _ => {
+                eprint!("Password is greater than 16 characters! Please enter a valid password:");
+                password.clear();
+                continue;
+            }
+        }
 
-        if key == key2 && key.len() > 5 {
-            break;
-        } else {
-            // handle passkey length issues...
-            match key.len() {
-                0..6 => {
-                    eprintln!("Password is less than 6 characters! Please re-enter your password")
-                }
-                6..16 => (),
-                _ => eprintln!(
-                    "Password is greater than 16 characters! Please re-enter your password!"
-                ),
-            }
-            // handle passkey mismatch
-            if key != key2 {
-                eprintln!("Passwords did not match! Please re-enter your password.");
-            }
-            key.clear();
+        eprint!("Please re-enter your password: ");
+        std::io::stderr().flush()?;
+        let re_enter = term.read_secure_line()?;
+        std::io::stderr().flush()?;
+
+        // handle passkey mismatch
+        if password != re_enter {
+            eprint!("Passwords did not match! Please re-enter your password:");
+            password.clear();
+            continue;
+        }
+
+        low_strength_reask =
+            crate::modules::passwords::zxcvbn::check_password_strength(password.as_str());
+
+        if low_strength_reask {
+            eprint!("\nEnter your password (Must be 6-16 characters): ");
         }
     }
-    Ok(key)
+
+    Ok(password)
 }
 
 pub fn store(
-    mut out_file: String,
+    mut in_file_path: String,
     output_fname: String,
     payload: &String,
     unencrypted: bool,
 ) -> Result<(), Box<dyn Error>> {
-    if payload.len() > 240 {
-        // exits the program with an error from the main file because the payload is greater than 240 characters.
-        eprintln!("Payload was larger than 240 bytes/characters! Exiting with code 1.");
-        exit(1)
-    }
+    //! stores a payload into a given image. Takes the file and outp
 
     let mut string_to_store: Vec<u8> = Vec::from(payload.as_bytes().to_vec());
     if !unencrypted {
@@ -157,36 +128,39 @@ pub fn store(
         string_to_store = string_to_store.encrypt(key.as_str())?;
     }
     // steganography stuff
-    let img = file_as_dynamic_image(out_file.clone());
+    let img = file_as_dynamic_image(in_file_path.to_owned());
     let enc = steganography::encoder::Encoder::new(&string_to_store, img);
-    let result = enc.encode_alpha();
+    let steg_image = enc.encode_alpha();
 
     // format the output to a readable format.
-    out_file.format_output(output_fname);
-    println!("Storing data into {}", out_file);
+    in_file_path.format_output(output_fname);
+    eprintln!("Storing data into {}", in_file_path);
 
-    save_image_buffer(result, out_file.to_string());
-    Ok(println!("Saved buffer to {}", out_file))
+    save_image_buffer(steg_image, in_file_path.to_string());
+    Ok(eprintln!("Saved buffer to {}", in_file_path))
 }
 
 pub fn extract(in_file: &String) {
+    //! Extracts the text from an image given a reference to the path.
+
     // decrypt from image.
     let file_buffer = String::from(in_file);
     let encoded_img = file_as_image_buffer(file_buffer);
     let dec = steganography::decoder::Decoder::new(encoded_img);
+    let term = console::Term::stderr();
 
-    //password
+    // password attempts
     let mut attempts = 4;
-    while attempts != 0 {
+    while attempts > 0 {
         let out_buffer = dec.decode_alpha();
         let clean_buffer: Vec<u8> = out_buffer.into_iter().filter(|b| *b != 0xff_u8).collect();
-        print!("Enter your password: ");
+        eprint!("Enter your password: ");
 
         std::io::stdout()
             .flush()
             .expect("Failed to flush the screen");
 
-        let key = match read_password() {
+        let key = match term.read_secure_line() {
             Ok(e) => e,
             Err(e) => {
                 eprintln!("Error parsing key: {e}");
@@ -200,8 +174,8 @@ pub fn extract(in_file: &String) {
                 attempts = 0;
             }
             None => {
+                attempts -= 1;
                 eprintln!("Password failed to decrypt. You have {attempts} attempt(s) remaining.");
-                attempts -= 1
             }
         }
     }
