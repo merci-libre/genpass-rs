@@ -1,7 +1,7 @@
 use core::str;
 use std::{error::Error, io::Write, path::Path, process::exit};
 
-use stegano::{self, utils::decrypt_data};
+use stegano;
 
 use rpassword::read_password;
 use steganography::{
