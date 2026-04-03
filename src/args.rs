@@ -9,10 +9,10 @@ pub struct GenpassArgs {
     #[command(subcommand)]
     pub commands: Commands,
 
-    /// Prints debugging information.
+    /// Prints debugging information
     #[arg(long, short)]
     pub debug: bool,
-    /// Loops the program (currently only works for String command)
+    /// Loops the program for infinite string generation
     #[arg(long, short)]
     pub r#loop: bool,
 }
