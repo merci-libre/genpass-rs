@@ -1,7 +1,7 @@
 use core::str;
 use std::{error::Error, io::Write, path::Path, process::exit};
 
-use stegano;
+use stegano::{self, utils::decrypt_data};
 
 use rpassword::read_password;
 use steganography::{
@@ -88,12 +88,14 @@ impl ClassicEncryption for Vec<u8> {
         let encrypted = stegano::utils::encrypt_payload(key, password);
         Ok(encrypted) // finish
     }
+
     fn decrypt(self, key: String) -> Option<String> {
+        // this function is giving issues with utf-8
         let decrypted = stegano::utils::decrypt_data(key.as_str(), &self);
         let password = match String::from_utf8(decrypted) {
             Ok(v) => v,
-            Err(_) => {
-                eprintln!("Bad password!");
+            Err(e) => {
+                eprintln!("Failed to convert: reason {e}");
                 return None;
             }
         };
@@ -104,12 +106,12 @@ impl ClassicEncryption for Vec<u8> {
 fn create_password() -> Result<String, Box<dyn Error>> {
     let mut key: String;
     loop {
-        print!("Enter your password (Must be 6-16 characters): ");
+        eprint!("Enter your password (Must be 6-16 characters): ");
         std::io::stdout().flush()?;
         key = read_password()?;
         std::io::stdout().flush()?;
 
-        print!("Please re-enter your password: ");
+        eprint!("Please re-enter your password: ");
         std::io::stdout().flush()?;
         let key2 = read_password()?;
         std::io::stdout().flush()?;
@@ -144,6 +146,7 @@ pub fn store(
     unencrypted: bool,
 ) -> Result<(), Box<dyn Error>> {
     //! stores a payload into a given image. Takes the file and outp
+
     let mut string_to_store: Vec<u8> = Vec::from(payload.as_bytes().to_vec());
     if !unencrypted {
         // create a password
@@ -158,10 +161,10 @@ pub fn store(
 
     // format the output to a readable format.
     in_file_path.format_output(output_fname);
-    println!("Storing data into {}", in_file_path);
+    eprintln!("Storing data into {}", in_file_path);
 
     save_image_buffer(steg_image, in_file_path.to_string());
-    Ok(println!("Saved buffer to {}", in_file_path))
+    Ok(eprintln!("Saved buffer to {}", in_file_path))
 }
 
 pub fn extract(in_file: &String) {
@@ -177,7 +180,7 @@ pub fn extract(in_file: &String) {
     while attempts > 0 {
         let out_buffer = dec.decode_alpha();
         let clean_buffer: Vec<u8> = out_buffer.into_iter().filter(|b| *b != 0xff_u8).collect();
-        print!("Enter your password: ");
+        eprint!("Enter your password: ");
 
         std::io::stdout()
             .flush()
