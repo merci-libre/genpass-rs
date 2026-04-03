@@ -1,5 +1,4 @@
 use console;
-use std::{fs::File, io::Read};
 
 use zxcvbn::zxcvbn;
 
