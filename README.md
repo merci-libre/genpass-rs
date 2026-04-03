@@ -3,9 +3,9 @@
 The official page for Merci-Libre's genpass-rs. Created by [westwardfishdme](https://github.com/westwardfishdme).
 
 - [Installation](#Installing)
-  - [Windows](#For Windows Users)
+  - [Windows](#Windows)
   - [Linux](#Linux)
-  - [From Source](#Building from Source)
+  - [From Source](#Building-From-Source)
 - [Usage](#Usage)
 - [Thanks](#Thanks)
 
@@ -14,7 +14,7 @@ The official page for Merci-Libre's genpass-rs. Created by [westwardfishdme](htt
 Installing genpass-rs is not supported via package managers yet. All x86_64 builds can be obtained from the 
 [releases tab](https://github.com/merci-libre/genpass-rs/releases).
 
-### For Windows Users
+### Windows
 
 There is now a precompiled binary attached to all releases <= 1.0.2
 You can simply run the .exe in a command prompt to use the software as desired.
