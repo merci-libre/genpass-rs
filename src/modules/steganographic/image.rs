@@ -1,10 +1,5 @@
 use core::str;
-use std::{
-    error::Error,
-    io::{Read, Write},
-    path::Path,
-    process::exit,
-};
+use std::{error::Error, io::Write, path::Path, process::exit};
 
 use console;
 use stegano;
