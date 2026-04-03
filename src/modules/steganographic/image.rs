@@ -19,50 +19,48 @@ trait OutputFormatting {
 }
 impl OutputFormatting for String {
     fn format_output(&mut self, output_fname: String) -> String {
+        //! Formats the output string to prevent overwriting the
+        //! file at a given path. Outputs should be unique.
         let substring = "_output";
         if output_fname.eq(&String::from("")) {
             self.push_str(substring);
         } else {
             *self = output_fname
         }
-        if self.contains(".png") {
-            *self = self.replace(".png", "");
-        }
-        if self.contains(".jpeg") {
-            *self = self.replace(".jpeg", "");
-        }
 
-        if self.contains(".jpg") {
-            *self = self.replace(".jpg", "");
+        let image_extensions = [".png", ".jpeg", ".jpg"];
+        for extension in image_extensions {
+            if self.contains(extension) {
+                *self = self.replace(extension, "");
+            }
         }
 
         self.push_str(".png");
-        // handle duplicate outputs.
-        if Path::new(&self).exists() {
-            let mut i: u32 = 0;
-            while Path::new(&self).exists() {
-                loop {
-                    if self.contains(".png") {
-                        *self = self.replace(".png", "");
-                    }
-                    let mut new_outputsub = format!("{}{}", substring, i);
-                    let prev_substring: String;
-                    match i {
-                        0 => prev_substring = substring.to_string(),
-                        _ => prev_substring = format!("{}{}", substring, i - 1),
-                    }
-                    if self.contains(new_outputsub.as_str()) {
-                        new_outputsub = format!("{}{}", substring, i);
-                    }
-                    *self = self.replace(prev_substring.as_str(), "");
 
-                    *self = self.replace(substring, "");
-                    self.push_str(new_outputsub.as_str());
-                    break;
-                }
-                self.push_str(".png");
-                i += 1;
+        // handle duplicate outputs.
+        let mut i: i64 = 0;
+
+        // this might be able to be re-written better but it works
+        while Path::new(&self).exists() {
+            let previous_iteration = i - 1;
+
+            //remove .png
+            if self.contains(".png") {
+                *self = self.replace(".png", "");
             }
+
+            let prev_substring: String = match i {
+                0 => substring.to_string(),
+                _ => format!("{}{}", substring, previous_iteration), // i.e. _output1 -> output0
+            };
+
+            *self = self.replace(prev_substring.as_str(), "");
+
+            // add our substring
+            let new_outputsub = format!("{}{}", substring, i);
+            self.push_str(new_outputsub.as_str());
+            self.push_str(".png");
+            i += 1;
         }
         return self.clone();
     }
