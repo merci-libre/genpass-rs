@@ -138,17 +138,12 @@ fn create_password() -> Result<String, Box<dyn Error>> {
 }
 
 pub fn store(
-    mut out_file: String,
+    mut in_file_path: String,
     output_fname: String,
     payload: &String,
     unencrypted: bool,
 ) -> Result<(), Box<dyn Error>> {
-    if payload.len() > 240 {
-        // exits the program with an error from the main file because the payload is greater than 240 characters.
-        eprintln!("Payload was larger than 240 bytes/characters! Exiting with code 1.");
-        exit(1)
-    }
-
+    //! stores a payload into a given image. Takes the file and outp
     let mut string_to_store: Vec<u8> = Vec::from(payload.as_bytes().to_vec());
     if !unencrypted {
         // create a password
@@ -157,27 +152,29 @@ pub fn store(
         string_to_store = string_to_store.encrypt(key.as_str())?;
     }
     // steganography stuff
-    let img = file_as_dynamic_image(out_file.clone());
+    let img = file_as_dynamic_image(in_file_path.to_owned());
     let enc = steganography::encoder::Encoder::new(&string_to_store, img);
-    let result = enc.encode_alpha();
+    let steg_image = enc.encode_alpha();
 
     // format the output to a readable format.
-    out_file.format_output(output_fname);
-    println!("Storing data into {}", out_file);
+    in_file_path.format_output(output_fname);
+    println!("Storing data into {}", in_file_path);
 
-    save_image_buffer(result, out_file.to_string());
-    Ok(println!("Saved buffer to {}", out_file))
+    save_image_buffer(steg_image, in_file_path.to_string());
+    Ok(println!("Saved buffer to {}", in_file_path))
 }
 
 pub fn extract(in_file: &String) {
+    //! Extracts the text from an image given a reference to the path.
+
     // decrypt from image.
     let file_buffer = String::from(in_file);
     let encoded_img = file_as_image_buffer(file_buffer);
     let dec = steganography::decoder::Decoder::new(encoded_img);
 
-    //password
+    // password attempts
     let mut attempts = 4;
-    while attempts != 0 {
+    while attempts > 0 {
         let out_buffer = dec.decode_alpha();
         let clean_buffer: Vec<u8> = out_buffer.into_iter().filter(|b| *b != 0xff_u8).collect();
         print!("Enter your password: ");
@@ -200,8 +197,8 @@ pub fn extract(in_file: &String) {
                 attempts = 0;
             }
             None => {
+                attempts -= 1;
                 eprintln!("Password failed to decrypt. You have {attempts} attempt(s) remaining.");
-                attempts -= 1
             }
         }
     }
