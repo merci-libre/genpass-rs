@@ -35,14 +35,33 @@ Genpass-rs supports up to string generation up to 255 characters. This was expli
 albeit the maximum supported amount of characters is 255. This limit is currently not bypassable, and is enforced for all forms of passphrase generation.
 
 ### Getting Help
-
 `genpassrs --help` : Prints help menu, in addition since this project uses clap you can see other commands with the following syntax:
 
 ```
 genpassrs <subcommand> --help
 ```
 
+Looks like:
+```
+Usage: genpassrs [OPTIONS] <COMMAND>
+
+Commands:
+  string        Generates a new string of specified length
+  integer       Generates an integer of specified length
+  alphanumeric  Generates an alphanumeric string
+  estimate      Estimates the strength of password
+  steg          Use Steganography to store strings into PNGs or JPEGs. Acceptable formats: ([.png], [.jpg], [.jpeg])
+  help          Print this message or the help of the given subcommand(s)
+
+Options:
+  -d, --debug    Prints debugging information
+  -l, --loop     Loops the program for infinite string generation
+  -h, --help     Print help
+  -V, --version  Print version
+```
+
 ### String Generation
+Supports both traditional ASCII based character generation and UTF-8 based extended ASCII generation (up to `char 255`).
 
 `genpassrs string --encoding extasc --length 30` : prints a string of length 30 containing random extended ascii characters, excluding spaces.
 
@@ -57,7 +76,7 @@ genpassrs <subcommand> --help
 `genpassrs alphanumeric -u -l 25` : generates a string of length 25 with uppercase letters.
 
 ### Integer Generation
-
+Integers are generated as strings-- formatted prints may come in future editions.
 
 `genpassrs integer --length 20` : prints a random integer of length 20. STDOUT is formatted as type: String, not integer.
 
