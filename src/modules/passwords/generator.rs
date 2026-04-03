@@ -1,3 +1,4 @@
+use console;
 use rand::Rng;
 use std::{io, ops::RangeInclusive, thread, time};
 
@@ -7,7 +8,7 @@ use crate::args::{Password, PasswordType};
 
 fn testing(password_info: &GeneratorDetails) {
     //! prints out debugging information if the user requests.
-    let mut t = term::stderr().unwrap();
+    let t = console::Term::stderr();
     let what_to_print = format!(
         "\nCurrently Generated String:\n{}\nfinal_bytesize={}\ntarget_bytesize={}\ntrue length={}\nmax_bytes={}",
         password_info.get_password(),
@@ -16,16 +17,11 @@ fn testing(password_info: &GeneratorDetails) {
         password_info.len(),
         password_info.get_max_byte_size()
     );
-    writeln!(t, "{what_to_print}").unwrap();
+    t.write_line(what_to_print.as_str()).unwrap();
     thread::sleep(time::Duration::from_secs(2));
 
     // to make terminal output look nice:
-    for _i in 0..6 {
-        t.carriage_return().unwrap();
-        t.delete_line().unwrap();
-        t.reset().unwrap();
-        t.cursor_up().unwrap();
-    }
+    t.clear_last_lines(6).unwrap();
     io::Write::flush(&mut io::stdout()).expect("failed to flush output");
 }
 
@@ -216,7 +212,7 @@ pub fn generate(password_options: Password, length: u8, debug: bool) -> Generato
     }
     let password_details = generate_password(length, &valid_charlist, gentype);
     if debug {
-        dbg!(&password_options, &valid_charlist);
+        //dbg!(&password_options, &valid_charlist);
         testing(&password_details);
     }
 
