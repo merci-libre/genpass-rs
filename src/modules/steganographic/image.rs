@@ -1,14 +1,12 @@
-use core::str;
-use std::{error::Error, io::Write, path::Path, process::exit};
+use super::encrypt::legacy::ClassicEncryption;
 
 use console;
-use stegano;
+use std::{error::Error, io::Write, path::Path, process::exit};
 
 use steganography::{
     self,
     util::{file_as_dynamic_image, file_as_image_buffer, save_image_buffer},
 };
-// use stegano's utilities to encrypt a payload with AES-128 Encryption.
 
 /*
 * all password handling and things with encryption and embedding into jpeg or png photo occurs in
@@ -63,41 +61,6 @@ impl OutputFormatting for String {
             i += 1;
         }
         return self.clone();
-    }
-}
-
-trait ClassicEncryption {
-    fn encrypt(self, key: &str) -> Result<Vec<u8>, Box<dyn Error>>;
-    fn decrypt(self, key: String) -> Option<String>;
-}
-
-impl ClassicEncryption for Vec<u8> {
-    fn encrypt(mut self, key: &str) -> Result<Vec<u8>, Box<dyn Error>> {
-        let length: usize = self.len();
-        let excess: usize = length % 16;
-        /*find the excess size of inputted string, if >0, pad the rest of the string with zeroes for encryption.*/
-        if excess > 0 {
-            for _i in 0..(16 - excess) {
-                self.push(0);
-            }
-        }
-        let password = &String::from_utf8_lossy(&self);
-        // this breaks if modified-- do not touch.
-        let encrypted = stegano::utils::encrypt_payload(key, password);
-        Ok(encrypted) // finish
-    }
-
-    fn decrypt(self, key: String) -> Option<String> {
-        // this function is giving issues with utf-8
-        let decrypted = stegano::utils::decrypt_data(key.as_str(), &self);
-        let password = match String::from_utf8(decrypted) {
-            Ok(v) => v,
-            Err(e) => {
-                eprintln!("Failed to convert: reason {e}");
-                return None;
-            }
-        };
-        Some(password)
     }
 }
 
