@@ -4,10 +4,6 @@ authors = ["Jonathan Villanueva <westwardfishdme@gmail.com>"]
 version = "2.1.1"
 edition = "2021"
 
-# debugging and benchmarking
-[profile.release]
-debug = true
-
 [dependencies]
 clap = { version = "4.5.48", features = ["derive"] }
 clap-stdin = "0.7.0"
