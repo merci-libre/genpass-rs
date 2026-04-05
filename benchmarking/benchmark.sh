@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
-# [ This is for regular benchmarks, 20-30 characters long is the average secure size for most
-#   modern websites, although this number really was arbitrarily chosen. Typical entropy at this
-#   size is high enough for general use without stress testing the program. ] 
+# This is for regular benchmarks, 20-30 characters long is the average secure size for most
+# modern websites, although this number really was arbitrarily chosen. Typical entropy at this
+# size is high enough for general use without stress testing the program.
 GENERAL_STRING_SIZE=30
+
+# This tests the program at maximum string size.
 STRESS_TEST_STRING_SIZE=255
 
 function check_binary(){
