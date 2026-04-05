@@ -34,17 +34,19 @@ fn enumerate_image_subs(subcommands: ImageCommands, debug: bool) -> Result<(), B
                 eprintln!("file does not exist");
                 exit(1)
             }
-            let filepath = String::from(&new_steganographic_image_options.name);
+
+            let filepath = new_steganographic_image_options.name;
+
             // check the file's magic bytes.
             steganographic::mime::check_magic(&filepath)?;
-            {
-                steganographic::image::store(
-                    new_steganographic_image_options.name,
-                    new_steganographic_image_options.output,
-                    &result_string,
-                    new_steganographic_image_options.unencrypted,
-                )?;
-            }
+
+            steganographic::image::store(
+                filepath,
+                new_steganographic_image_options.output,
+                &result_string,
+                new_steganographic_image_options.unencrypted,
+            )?;
+
             println!("{result_string}");
         }
 
@@ -68,21 +70,24 @@ fn enumerate_image_subs(subcommands: ImageCommands, debug: bool) -> Result<(), B
         }
 
         ImageCommands::Embed(existing_args) => {
-            let filepath = String::from(&existing_args.name);
-            if Path::new(&filepath).exists() {
-                let filepath = String::from(&existing_args.name);
-                steganographic::mime::check_magic(&filepath)?;
+            let filepath = existing_args.name;
 
-                match steganographic::image::store(
-                    existing_args.name,
-                    existing_args.output,
-                    &existing_args.payload.to_string(),
-                    existing_args.unencrypted,
-                    // See documentation for how this function works.
-                ) {
-                    Ok(_) => (),
-                    Err(e) => eprintln!("{} experienced an error: {e}", BIN_NAME),
-                }
+            if !Path::new(&filepath).exists() {
+                eprintln!("file does not exist");
+                exit(1);
+            }
+
+            steganographic::mime::check_magic(&filepath)?;
+
+            match steganographic::image::store(
+                filepath,
+                existing_args.output,
+                &existing_args.payload.to_string(),
+                existing_args.unencrypted,
+                // See documentation for how this function works.
+            ) {
+                Ok(_) => (),
+                Err(e) => eprintln!("{} experienced an error: {e}", BIN_NAME),
             }
         }
     }
@@ -90,6 +95,7 @@ fn enumerate_image_subs(subcommands: ImageCommands, debug: bool) -> Result<(), B
 }
 
 fn do_forever(arguments: Password, length: u8, debug: bool) {
+    //! repeats the process of password generation forever. Useful for testing password strength.
     loop {
         let password_info = passwords::generator::generate(arguments, length, debug);
         match arguments.password_type() {
