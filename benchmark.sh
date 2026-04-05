@@ -24,7 +24,6 @@ function benchmarks(){
   # [ Generate a flamegraph -- requires cargo-flamegraph]
   if ! cargo flamegraph -o "$2".svg --bin genpassrs -- string -l "$1" > /dev/null 2>/dev/null;then
     printf "You don't have cargo flamegraph installed. No flamegraph will be generated.\n"
-    exit 1
   fi
 
 }
