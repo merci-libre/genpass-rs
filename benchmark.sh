@@ -4,31 +4,40 @@
 #   modern websites, although this number really was arbitrarily chosen. Typical entropy at this
 #   size is high enough for general use without stress testing the program. ] 
 GENERAL_STRING_SIZE=30
-
-if ! [[ -f ./target/release/genpassrs ]];then
-  printf "error: binary does not does not exist!\n"
-  printf "creating binary..." 
-  cargo build --release
-fi
-
-printf "[ Beginning normal tests... ]" 
-
-# [ Generate a benchmark performance -- requires hyperfine ]
-hyperfine "./target/release/genpassrs string -l $GENERAL_STRING_SIZE"
-sleep 0.8
-
-# [ Generate a flamegraph -- requires cargo-flamegraph]
-cargo flamegraph -o genpass_string"$GENERAL_STRING_SIZE".svg --bin genpassrs -- string -l "$GENERAL_STRING_SIZE" > /dev/null 2>/dev/null
-sleep 0.8
-
-# [ Stress testing-- max string size;]
-printf "[ Beginning stress test... ]" 
 STRESS_TEST_STRING_SIZE=255
 
-# [ test performance ]
-hyperfine "./target/release/genpassrs string -l $STRESS_TEST_STRING_SIZE"
-sleep 0.8
+function check_binary(){
+  if ! [[ -f ./target/release/genpassrs ]];then
+    printf "error: binary does not does not exist!\n"
+    printf "creating binary..." 
+    cargo build --release
+  fi
+}
 
-# [ check flamegraph ]
-cargo flamegraph -o genpass_stress_test.svg --bin genpassrs -- string -l "$STRESS_TEST_STRING_SIZE" > /dev/null 2>/dev/null
-sleep 0.8
+function benchmarks(){
+    # [ Generate a benchmark performance -- requires hyperfine ]
+  if ! hyperfine "./target/release/genpassrs string -l $1" 2> /dev/null;then
+    printf "You don't have hyperfine installed. No metrics will be generated.\n"
+    exit 1
+  fi
+
+  # [ Generate a flamegraph -- requires cargo-flamegraph]
+  if ! cargo flamegraph -o "$2".svg --bin genpassrs -- string -l "$1" > /dev/null 2>/dev/null;then
+    printf "You don't have cargo flamegraph installed. No flamegraph will be generated.\n"
+    exit 1
+  fi
+
+}
+
+
+function main(){
+  check_binary
+
+  printf "Performing normal tests...\n" 
+  benchmarks $GENERAL_STRING_SIZE "genpass-flamegraph-normal"
+
+  printf "Performing stress tests...\n" 
+  benchmarks $STRESS_TEST_STRING_SIZE "genpass-flamegraph-stress-test"
+}
+main
+
