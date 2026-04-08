@@ -642,6 +642,7 @@ dependencies = [
  "clap",
  "clap-stdin",
  "console",
+ "image",
  "rand",
  "steganography",
  "zxcvbn",
