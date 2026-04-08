@@ -169,16 +169,16 @@ pub fn generate(password_options: Password, length: u8, debug: bool) -> Generato
             }
 
             if char_max == 255 {
-                // generates extasc if set as a parameter, and with a 'pwetty pwease',
-                let char_ranges: [std::ops::RangeInclusive<i16>; 4] =
-                    [0xa1..=0xac, 0xae..=0xb3, 0xb5..=0xb7, 0xb9..=0xff];
                 // I used hex values for ease of reading. It's not true extended ascii--
-                // but utf-8 up to value 255. These ranges essentially remove all non-printable
+                // but printable utf-8 up to value 255.
+
+                // These ranges essentially remove all non-printable
                 // characters from being pushed to our character list.
+                let char_ranges: [std::ops::RangeInclusive<u8>; 4] =
+                    [0xa1..=0xac, 0xae..=0xb3, 0xb5..=0xb7, 0xb9..=0xff];
                 for x in char_ranges {
                     for i in x {
-                        // looks scary-- but will always works as intended.
-                        valid_charlist.push(i as u8 as char);
+                        valid_charlist.push(i as char);
                     }
                 }
                 gentype = GenerationType::ExtAscii
