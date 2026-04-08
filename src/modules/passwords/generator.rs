@@ -1,6 +1,6 @@
 use console;
 use rand::Rng;
-use std::{io, ops::RangeInclusive, thread, time};
+use std::{io, thread, time};
 
 use crate::args::{Password, PasswordType};
 
@@ -10,12 +10,13 @@ fn testing(password_info: &GeneratorDetails) {
     //! prints out debugging information if the user requests.
     let t = console::Term::stderr();
     let what_to_print = format!(
-        "\nCurrently Generated String:\n{}\nfinal_bytesize={}\ntarget_bytesize={}\ntrue length={}\nmax_bytes={}",
+        "\nCurrently Generated String:\n{}\nfinal_bytesize={}\ntarget_bytesize={}\ntrue length={}\nmax_bytes={}\npossible_characters:\n{:?}",
         password_info.get_password(),
         password_info.get_final_bytesize(),
         password_info.get_target_bytesize(),
         password_info.len(),
-        password_info.get_max_byte_size()
+        password_info.get_max_byte_size(),
+        password_info.get_possible_characters(),
     );
     t.write_line(what_to_print.as_str()).unwrap();
     thread::sleep(time::Duration::from_secs(2));
@@ -27,6 +28,7 @@ fn testing(password_info: &GeneratorDetails) {
 
 #[derive(Clone)]
 pub struct GeneratorDetails {
+    possible_characters: Vec<char>,
     password: String,
     target_bytesize: u16,
     max_bytes: u16,
@@ -37,6 +39,7 @@ pub struct GeneratorDetails {
 impl GeneratorDetails {
     fn new(
         target: u16,
+        character_list: Vec<char>,
         true_length: u8,
         final_generation_size: u16,
         max_size: u16,
@@ -44,6 +47,7 @@ impl GeneratorDetails {
     ) -> GeneratorDetails {
         //! Creates a new Details struct for the Generated passwords.
         GeneratorDetails {
+            possible_characters: character_list,
             password: string,
             target_bytesize: target,
             max_bytes: max_size,
@@ -51,6 +55,10 @@ impl GeneratorDetails {
             true_length: true_length,
         }
     }
+    fn get_possible_characters(&self) -> &[char] {
+        return self.possible_characters.as_slice();
+    }
+
     pub fn get_password(&self) -> &String {
         //! Gets the actual password and returns it
         //! as a reference.
@@ -83,7 +91,7 @@ enum GenerationType {
 
 fn generate_password(
     length: u8,
-    character_list: &Vec<char>,
+    character_list: Vec<char>,
     generation_type: GenerationType,
 ) -> GeneratorDetails {
     //! The actual password engine that genpass-rs uses, returns the generator
@@ -131,6 +139,7 @@ fn generate_password(
     }
     return GeneratorDetails::new(
         target_bytesize,
+        character_list,
         truecount,
         bytesize,
         max_size,
@@ -185,21 +194,21 @@ pub fn generate(password_options: Password, length: u8, debug: bool) -> Generato
                 char_min = 65;
             }
 
-            // ascii char ranges
+            // ascii char sequences
             let capital_range = char_min..=90;
             let lowercase_range = 97..=char_max;
 
-            let char_ranges: [RangeInclusive<u8>; 2] = [capital_range, lowercase_range];
-
             if string_args.upper || string_args.smallcase {
-                for i in char_ranges[0].to_owned() {
+                // capital range only, since adding the lowercase can create predictable strings.
+                for i in capital_range {
                     valid_charlist.push(i as char);
                 }
             } else {
-                for i in char_ranges[0].to_owned() {
+                // capital + lowercase  characters
+                for i in capital_range {
                     valid_charlist.push(i as char);
                 }
-                for i in char_ranges[1].to_owned() {
+                for i in lowercase_range {
                     valid_charlist.push(i as char);
                 }
             }
@@ -210,7 +219,7 @@ pub fn generate(password_options: Password, length: u8, debug: bool) -> Generato
             }
         }
     }
-    let password_details = generate_password(length, &valid_charlist, gentype);
+    let password_details = generate_password(length, valid_charlist, gentype);
     if debug {
         //dbg!(&password_options, &valid_charlist);
         testing(&password_details);
@@ -262,6 +271,7 @@ mod tests {
                 "failed to determine the real size of the string {a} != {b}"
             );
             assert_ne!(previous_string, *password.get_password());
+            assert_eq!(password.get_final_bytesize(), 32);
             previous_string = password.get_password().clone()
         }
     }
@@ -290,8 +300,41 @@ mod tests {
         }
     }
     #[test]
+    fn test_check_bad_characters() {
+        //! Checks the list for any possible bad characters inside of the password.
+        let generation_type = StringArgs {
+            encoding: String::from("extasc"),
+            space: true,
+            length: 32,
+        };
+        let password = start_test(generation_type);
+        let charlist = password.get_possible_characters();
+        for i in charlist {
+            match *i as u8 {
+                32..127 => (),
+                0xa1..=0xac => (),
+                0xae..=0xb3 => (),
+                0xb5..=0xb7 => (),
+                0xb9..=0xff => (),
+                _ => panic!("Bad character! {}", *i as u8),
+            }
+        }
+        let generation_type = StringArgs {
+            encoding: String::from("ascii"),
+            space: true,
+            length: 32,
+        };
+        let password = start_test(generation_type);
+        let charlist = password.get_possible_characters();
+        for i in charlist {
+            match *i as u8 {
+                32..127 => (),
+                _ => panic!("Bad character! {}", *i as u8),
+            }
+        }
+    }
+    #[test]
     fn test_numeric() {
-        let mut previous_string = String::new();
         for _ in TESTCOUNT {
             let generation_type = IntegerArgs { length: 20 };
             let password = start_test(generation_type.to_owned());
@@ -299,8 +342,7 @@ mod tests {
                 let _: u8 = i.to_string().parse::<u8>().expect("was not a number");
             }
             assert_eq!(password.len(), 20);
-            assert_ne!(previous_string, *password.get_password());
-            previous_string = password.get_password().clone()
+            assert_eq!(password.get_final_bytesize(), 20);
         }
     }
     #[test]
@@ -318,7 +360,7 @@ mod tests {
             for i in password.chars() {
                 match i as u8 {
                     65..=90 => (),
-                    97..=122 => (),
+                    97..=122 => panic!("String should generate all uppercase before return."),
                     _ => panic!("bad character!"),
                 }
             }
