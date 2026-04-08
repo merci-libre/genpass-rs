@@ -84,16 +84,13 @@ Integers are generated as strings-- formatted prints may come in future editions
 `genpassrs estimate <string>` OR `<stdin> | genpassrs estimate -`
 
 ## Using Steganographic Functions to embed or store passwords/messages.
-This program uses 2 crates for steganographic functionality: 
-- [Stegano](https://github.com/wiseaidev/stegano) for encrypting and formatting payloads.
-- [Steganography](https://github.com/teovoinea/steganography) for actually embedding the payloads into the images.
 
-When encrypting a payload into an image, Genpass-rs uses AES-128 to securely store up to 240-byte long strings into images.
+When encrypting a payload into an image, Genpass-rs uses AES-128 to securely store the strings into the desired image.
 To use the steganographic functions the inputted file must meet the following criteria:
 - Must be a [.jpg, .jpeg, or .png], this is checked at run-time by checking the file's magic bytes.
 - Must be at least 1kb in size, however as of 1.1.2 there is no check on file size. Meaning that smaller images may result in undefined behavior.
 - Must not have any previous data embedded into an image using this program (or other programs using steganography), there is no way to check for this 
-in the software at the current moment, so use fresh unedited images before using this command!
+in the software at the current moment, so use fresh unedited images before using this command to make sure youre not overwriting passwords!!
 
 The steganographic file will be outputted as a `.png`
 
