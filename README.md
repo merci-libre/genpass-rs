@@ -116,7 +116,7 @@ This command will generate a new passphrase with both ascii and extended ascii o
 # Modules
 
 ~~Genpassrs supports module usage outside of genpass for whatever project you are working on. Of course, you can use a wrapper to use genpassrs in any project.~~
-(this is currently broken in the current patch-- will future updates will make modules available again soon.)
+(this is currently broken in the current patch-- future updates will make modules available again soon.)
 
 # Thanks
 
