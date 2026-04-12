@@ -9,7 +9,7 @@ GENERAL_STRING_SIZE=30
 STRESS_TEST_STRING_SIZE=255
 
 function check_binary(){
-  if ! [[ -f ./target/release/genpassrs ]];then
+  if ! [[ -f ../target/release/genpassrs ]];then
     printf "error: binary does not does not exist!\n"
     printf "creating binary..." 
     cargo build --release
