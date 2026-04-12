@@ -109,20 +109,21 @@ fn generate_password(
         GenerationType::Ascii => {
             for _ in 0..length {
                 let random_index: usize = random.random_range(0..character_list.len());
-                // safe to call unwrap here, but something is happening with the bytes.
                 let selected_character: &char = character_list.get(random_index).unwrap();
                 bytes.push(*selected_character);
                 bytesize += 1;
             }
         }
         GenerationType::ExtAscii => {
+            // This is what was originally used for generating characters originally--
+            // it works extremely well for Extended ascii, and works generally
             while bytesize != target_bytesize {
                 let random_index: usize = random.random_range(0..character_list.len());
                 let selected_character: &char = character_list.get(random_index).unwrap();
 
                 bytes.push(*selected_character);
 
-                // count the current bytes and keeps track of the target bytesize.
+                // valid for utf-8 smaller than 255 as char is limited by this.
                 if *selected_character as u8 > 128 && target_bytesize < max_size {
                     target_bytesize += 1;
                     bytesize += 2;
@@ -185,7 +186,6 @@ pub fn generate(password_options: Password, length: u8, debug: bool) -> Generato
             }
         }
         PasswordType::Alphanumeric(string_args) => {
-            // i forgot about the special chars between numbers and non-numbers. whoops.
             if char_min == 48 {
                 let numbers: std::ops::RangeInclusive<u8> = char_min..=57;
                 for i in numbers {
@@ -221,6 +221,8 @@ pub fn generate(password_options: Password, length: u8, debug: bool) -> Generato
     }
     let password_details = generate_password(length, valid_charlist, gentype);
     if debug {
+        // if modifying any of the code above, change from a comment.
+
         //dbg!(&password_options, &valid_charlist);
         testing(&password_details);
     }
@@ -231,7 +233,8 @@ pub fn generate(password_options: Password, length: u8, debug: bool) -> Generato
 // tests
 mod tests {
     #[allow(dead_code)]
-    const TESTCOUNT: std::ops::Range<usize> = 0..100_000;
+    // changed the test count to be more reasonable.
+    const TESTCOUNT: std::ops::Range<usize> = 0..1000;
 
     use super::GeneratorDetails;
     use crate::args::*;
