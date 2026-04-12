@@ -1,4 +1,6 @@
+// local imports
 use super::encrypt::legacy::ClassicEncryption;
+use super::interactive_check::interactively_check_password;
 
 use console;
 use std::{error::Error, io::Write, path::Path, process::exit};
@@ -101,8 +103,7 @@ fn create_password() -> Result<String, Box<dyn Error>> {
             continue;
         }
 
-        low_strength_reask =
-            crate::modules::passwords::zxcvbn::check_password_strength(password.as_str());
+        low_strength_reask = interactively_check_password(password.as_str());
 
         if low_strength_reask {
             eprint!("\nEnter your password (Must be 6-16 characters): ");
