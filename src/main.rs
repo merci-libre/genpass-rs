@@ -17,6 +17,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 const AUTHOR: &str = env!("CARGO_PKG_AUTHORS");
 
 fn enumerate_image_subs(subcommands: ImageCommands, debug: bool) -> Result<(), Box<dyn Error>> {
+    //! Binding to the steganographic commands when enumerating arguments.
     match subcommands {
         ImageCommands::Generate(new_steganographic_image_options) => {
             let arguments = new_steganographic_image_options
