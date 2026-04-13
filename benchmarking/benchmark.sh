@@ -5,11 +5,13 @@
 # size is high enough for general use without stress testing the program.
 GENERAL_STRING_SIZE=30
 
+BINPATH=../target/release/genpassrs
+
 # This tests the program at maximum string size.
 STRESS_TEST_STRING_SIZE=255
 
 function check_binary(){
-  if ! [[ -f ../target/release/genpassrs ]];then
+  if ! [[ -f $BINPATH ]];then
     printf "error: binary does not does not exist!\n"
     printf "creating binary..." 
     cargo build --release
@@ -18,7 +20,7 @@ function check_binary(){
 
 function benchmarks(){
     # [ Generate a benchmark performance -- requires hyperfine ]
-  if ! hyperfine "./target/release/genpassrs string -l $1" 2> /dev/null;then
+  if ! hyperfine "$BINPATH string -l $1" 2> /dev/null;then
     printf "You don't have hyperfine installed. No metrics will be generated.\n"
     exit 1
   fi
