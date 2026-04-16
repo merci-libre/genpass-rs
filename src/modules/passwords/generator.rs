@@ -231,6 +231,7 @@ pub fn generate(password_options: Password, length: u8, debug: bool) -> Generato
 }
 
 // tests
+#[cfg(test)]
 mod tests {
     #[allow(dead_code)]
     // changed the test count to be more reasonable.
@@ -241,7 +242,7 @@ mod tests {
 
     #[allow(dead_code)]
     fn start_test<T: CheckArgs + Clone>(generation_type: T) -> GeneratorDetails {
-        // run at every test start
+        //! runs at every test start; sort of like a "setup"
         let arg_type = generation_type.clone().check_arguments();
         return super::generate(arg_type, generation_type.get_length(), false);
     }
@@ -288,23 +289,31 @@ mod tests {
                 length: 32,
             };
             let password = start_test(generation_type.to_owned());
+            assert_ne!(
+                previous_string,
+                *password.get_password(),
+                "Passwords generated are the same!"
+            );
+
             let a = password.len();
             let b = generation_type.length;
             assert_eq!(
                 a, b,
                 "failed to determine the real size of the string {a} != {b}"
             );
-            assert_ne!(previous_string, *password.get_password());
             let weirdchar = String::from(0xa0 as u8 as char);
-            if password.get_password().contains(&weirdchar) {
-                panic!("contains that weird char!")
-            }
+            assert!(
+                !password.get_password().contains(&weirdchar),
+                "contains that weird char!"
+            );
             previous_string = password.get_password().clone()
         }
     }
     #[test]
     fn test_check_bad_characters() {
         //! Checks the list for any possible bad characters inside of the password.
+
+        // test in extended ascii 32-255
         let generation_type = StringArgs {
             encoding: String::from("extasc"),
             space: true,
@@ -322,6 +331,7 @@ mod tests {
                 _ => panic!("Bad character! {}", *i as u8),
             }
         }
+        // test in ascii
         let generation_type = StringArgs {
             encoding: String::from("ascii"),
             space: true,
