@@ -46,6 +46,7 @@ fn enumerate_image_subs(subcommands: ImageCommands, debug: bool) -> Result<(), B
                 new_steganographic_image_options.output,
                 &result_string,
                 new_steganographic_image_options.unencrypted,
+                new_steganographic_image_options.skip,
             )?;
 
             println!("{result_string}");
@@ -85,7 +86,7 @@ fn enumerate_image_subs(subcommands: ImageCommands, debug: bool) -> Result<(), B
                 existing_args.output,
                 &existing_args.payload.to_string(),
                 existing_args.unencrypted,
-                // See documentation for how this function works.
+                existing_args.skip,
             ) {
                 Ok(_) => (),
                 Err(e) => eprintln!("{} experienced an error: {e}", BIN_NAME),
