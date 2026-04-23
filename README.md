@@ -9,6 +9,19 @@ The official page for Merci-Libre's genpass-rs. Created by [westwardfishdme](htt
 - [Thanks](#Thanks)
 
 
+## About
+
+- What is Genpass-rs?
+
+`Genpass-rs` is a steganographic password generation tool written in Rust. It's a highly powerful command-line tool
+that allows you to generate, test, and use highly random passwords and store them into images, or use for one-time
+use. It uses AES-128 bit encryption when storing your password into images.
+
+When unmasking an image for the contents, `Genpass-rs` will automatically detect whether the image has encryption or
+is stored without encryption.
+
+You can read more about the project and it's history here on my [professional blog](https://westwardfishdme.github.io/programming/software/2026/04/22/genpass.html).
+
 ## Installing
 Installing genpass-rs is not supported via package managers yet. All x86_64 builds can be obtained from the 
 [releases tab](https://github.com/merci-libre/genpass-rs/releases).
