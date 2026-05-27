@@ -56,30 +56,30 @@ impl GeneratorDetails {
         }
     }
     fn get_possible_characters(&self) -> &[char] {
-        return self.possible_characters.as_slice();
+        self.possible_characters.as_slice()
     }
 
     pub fn get_password(&self) -> &String {
         //! Gets the actual password and returns it
         //! as a reference.
-        return &self.password;
+        &self.password
     }
     fn get_target_bytesize(&self) -> u16 {
         //! Gets the target bytesize that the password generation engine automatically
         //! set when ran.
-        return self.target_bytesize.to_owned();
+        self.target_bytesize
     }
     fn get_max_byte_size(&self) -> u16 {
         //! gets the maximum size bytes the generator set at it's start.
-        return self.max_bytes.to_owned();
+        self.max_bytes
     }
     fn get_final_bytesize(&self) -> u16 {
         //! gets the final bytesize after creating the string.
-        return self.final_bytesize.to_owned();
+        self.final_bytesize
     }
-    fn len(&self) -> u8 {
-        //! gets the actual length of the string-- excluding utf-8 padding.
-        return self.true_length.to_owned();
+    pub fn len(&self) -> u8 {
+        //! gets the actual length of the string.
+        self.true_length
     }
 }
 
@@ -138,14 +138,14 @@ fn generate_password(
     if generation_type == GenerationType::Ascii {
         truecount = final_password.len() as u8;
     }
-    return GeneratorDetails::new(
+    GeneratorDetails::new(
         target_bytesize,
         character_list,
         truecount,
         bytesize,
         max_size,
         final_password,
-    );
+    )
 }
 
 #[doc(hidden)]
@@ -227,7 +227,7 @@ pub fn generate(password_options: Password, length: u8, debug: bool) -> Generato
         testing(&password_details);
     }
 
-    return password_details;
+    password_details
 }
 
 // tests
@@ -243,7 +243,7 @@ mod tests {
     fn start_test<T: CheckArgs + Clone>(generation_type: T) -> GeneratorDetails {
         // run at every test start
         let arg_type = generation_type.clone().check_arguments();
-        return super::generate(arg_type, generation_type.get_length(), false);
+        super::generate(arg_type, generation_type.get_length(), false)
     }
     #[test]
     fn test_ascii_string_generation() {
