@@ -8,7 +8,10 @@ use std::{error::Error, path::Path, process::exit};
 // calls to modules
 use args::{CheckArgs, Commands, GenpassArgs, ImageCommands, Password, PasswordType};
 use clap::Parser;
-use modules::{passwords, steganographic};
+use modules::{
+    passwords::{self, generator::GeneratorDetails},
+    steganographic,
+};
 use std::env;
 
 // package info
@@ -23,13 +26,17 @@ fn enumerate_image_subs(subcommands: ImageCommands, debug: bool) -> Result<(), B
             let arguments = new_steganographic_image_options
                 .to_owned()
                 .check_arguments();
-            let result_string = passwords::generator::generate(
+
+            let password: GeneratorDetails = passwords::generator::generate(
                 arguments,
                 new_steganographic_image_options.length,
                 debug,
-            )
-            .get_password()
-            .to_owned();
+            );
+            if password.len() > 128 {
+                eprintln!("WARNING: Storing strings greater than size 128 is not supported by genpass-rs\nThis is due to a bug with the AES-128 decryption module that occasionally mishandles large input sizes.")
+            }
+
+            let result_string = password.get_password().to_owned();
 
             if !Path::new(&new_steganographic_image_options.name).exists() {
                 eprintln!("file does not exist");
@@ -46,7 +53,6 @@ fn enumerate_image_subs(subcommands: ImageCommands, debug: bool) -> Result<(), B
                 new_steganographic_image_options.output,
                 &result_string,
                 new_steganographic_image_options.unencrypted,
-                new_steganographic_image_options.skip,
             )?;
 
             println!("{result_string}");
@@ -80,13 +86,16 @@ fn enumerate_image_subs(subcommands: ImageCommands, debug: bool) -> Result<(), B
             }
 
             steganographic::mime::check_magic(&filepath)?;
+            if existing_args.payload.len() > 128 {
+                eprintln!("WARNING: Storing strings greater than size 128 is not supported by genpass-rs\nThis is due to a bug with the AES-128 decryption module that improperly handles large input sizes.")
+            }
 
             match steganographic::image::store(
                 filepath,
                 existing_args.output,
                 &existing_args.payload.to_string(),
                 existing_args.unencrypted,
-                existing_args.skip,
+                // See documentation for how this function works.
             ) {
                 Ok(_) => (),
                 Err(e) => eprintln!("{} experienced an error: {e}", BIN_NAME),

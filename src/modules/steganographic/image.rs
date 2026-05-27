@@ -66,19 +66,16 @@ impl OutputFormatting for String {
     }
 }
 
-fn create_password(skip_strength_test: bool) -> Result<String, Box<dyn Error>> {
-    //! Creates the user password as the AES-128 key for storing
-    //! the images in the password. Future additions may switch over
-    //! to using a hashed key instead of just the key itself.
+fn create_password() -> Result<String, Box<dyn Error>> {
     let mut password = String::new();
     eprint!("Enter your password (Must be 6-16 characters): ");
     let term = console::Term::stderr();
-    let mut low_strength_reask = !skip_strength_test;
-
+    let mut low_strength_reask = true;
     while password.len() < 6 || low_strength_reask {
         std::io::stderr().flush()?;
         password = term.read_secure_line()?;
         std::io::stderr().flush()?;
+
         // handle passkey length issues...
         match password.len() {
             0..6 => {
@@ -93,6 +90,7 @@ fn create_password(skip_strength_test: bool) -> Result<String, Box<dyn Error>> {
                 continue;
             }
         }
+
         eprint!("Please re-enter your password: ");
         std::io::stderr().flush()?;
         let re_enter = term.read_secure_line()?;
@@ -105,9 +103,9 @@ fn create_password(skip_strength_test: bool) -> Result<String, Box<dyn Error>> {
             continue;
         }
 
-        // if the user skips the strength test; skip over the password strength check
+        low_strength_reask = interactively_check_password(password.as_str());
+
         if low_strength_reask {
-            low_strength_reask = interactively_check_password(password.as_str());
             eprint!("\nEnter your password (Must be 6-16 characters): ");
         }
     }
@@ -120,26 +118,23 @@ pub fn store(
     output_fname: String,
     payload: &String,
     unencrypted: bool,
-    skip: bool,
 ) -> Result<(), Box<dyn Error>> {
-    //! stores a payload into a given image. Takes the file and outp
+    //! stores a payload into a given image. Takes the file and outputs it to the png
 
-    let mut string_to_store: Vec<u8> = Vec::from(payload.as_bytes().to_vec());
+    let mut string_to_store = payload.as_bytes().to_vec();
+
     if !unencrypted {
-        // create a password
-        let key = create_password(skip)?;
-        //end key
-        string_to_store = string_to_store.encrypt(key.as_str())?;
+        // weird bug occurs here
+        string_to_store = string_to_store.encrypt(create_password()?);
     }
     // steganography stuff
     let img = file_as_dynamic_image(in_file_path.to_owned());
     let enc = steganography::encoder::Encoder::new(&string_to_store, img);
     let steg_image = enc.encode_alpha();
 
-    // format the output to a readable format.
+    // formats the output name to remove any trailing .png extensions.
     in_file_path.format_output(output_fname);
     eprintln!("Storing data into {}", in_file_path);
-
     save_image_buffer(steg_image, in_file_path.to_string());
     Ok(eprintln!("Saved buffer to {}", in_file_path))
 }
@@ -193,34 +188,4 @@ pub fn extract_raw_unencrypted(path: &String) -> Result<String, Box<dyn Error>> 
 
     let string = String::from_utf8(clean_buffer)?;
     Ok(string)
-}
-
-#[cfg(test)]
-mod tests {
-
-    #[allow(unused)]
-    use super::*;
-    #[allow(unused)]
-    use crate::args::NewArgs;
-
-    #[test]
-    #[ignore = "this is implied behavior"]
-    fn test_skip_password() {
-        //! Although not explicitly tested, it is implied that ExistingArgs
-        //! would exhibit the exact same behavior that NewArgs does. since they
-        //! both use the uniform password logic.
-        let args = NewArgs {
-            encoding: String::from(""),
-            output: String::from(""),
-            name: String::from(""),
-            length: 1,
-            space: false,
-            unencrypted: false,
-            skip: true,
-        };
-        let password_check_would_not_skip = !args.skip;
-        if password_check_would_not_skip {
-            panic!("skip wouldn't skip the password");
-        }
-    }
 }

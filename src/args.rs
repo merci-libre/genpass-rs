@@ -28,7 +28,7 @@ pub enum Commands {
     /// Estimates the strength of password.
     Estimate(EstimateArgs),
     /// Use Steganography to store strings into PNGs or JPEGs. Acceptable formats: ([.png], [.jpg], [.jpeg])
-    Steg(Steganography),
+    Steg(StoreArgs),
 }
 // Generation Arguments
 
@@ -81,14 +81,9 @@ pub struct IntegerArgs {
     pub length: u8,
 }
 
-/* steganography arguments.*/
-
-/*
-* The following structs below are all arguments passed over to clap to parse
-* in order to handle the steganography feature.
-*/
+// database arguments
 #[derive(Clone, Debug, Args)]
-pub struct Steganography {
+pub struct StoreArgs {
     #[command(subcommand)]
     /// Use Steganography to store strings into PNGs or JPEGs. Acceptable formats: ([.png], [.jpg], [.jpeg])
     pub store: ImageCommands,
@@ -109,48 +104,37 @@ pub struct NewArgs {
     /// encoding for the characters used in the password. Valid arguments include: 'extasc, ascii'
     #[arg(long, short, default_value = "ascii")]
     pub encoding: String,
-
-    /// name of the output file
-    #[arg(long, short, default_value = "")]
-    pub output: String,
-    /// Name of the input image file to encrypt the password into.
-    pub name: String,
-    /// Length of the string. Can only be up to 240 characters for 'asc' and 120 for 'extasc'.
-    #[arg(long, short)]
-    pub length: u8,
-
     ///Produces spaces (char 32) in the password generated.
     #[arg(long, short)]
     pub space: bool,
-
+    /// Length of the string. Can only be up to 240 characters for 'asc' and 120 for 'extasc'.
+    #[arg(long, short)]
+    pub length: u8,
     /// Use this option to embed the message into the image without any encryption.
     ///
     /// (DANGEROUS FOR STORING PASSWORDS!)
     #[arg(long, short)]
     pub unencrypted: bool,
-
-    /// Use this option to skip over the password strength check when creating a new password.
-    #[arg(long)]
-    pub skip: bool,
+    /// name of the output file
+    #[arg(long, short, default_value = "")]
+    pub output: String,
+    /// Name of the input image file to encrypt the password into.
+    pub name: String,
 }
 #[derive(Clone, Debug, Args)]
 pub struct ExistingArgs {
     /// String to encode into image.
     #[arg(long, short)]
     pub payload: MaybeStdin<String>,
-    #[arg(long, short, default_value = "")]
-    pub output: String,
-    /// Image to modify.
-    pub name: String,
     /// Use this option to embed the message into the image without any encryption.
     ///
     /// (DANGEROUS FOR STORING PASSWORDS!)
     #[arg(long, short)]
     pub unencrypted: bool,
-
-    /// Use this option to skip over the password strength check when creating a new password.
-    #[arg(long)]
-    pub skip: bool,
+    #[arg(long, short, default_value = "")]
+    pub output: String,
+    /// Image to modify.
+    pub name: String,
 }
 #[derive(Clone, Debug, Args)]
 pub struct ReadArgs {
@@ -170,13 +154,13 @@ pub enum PasswordType {
 /// Password Type that gets produced that gets passed over to
 /// the password generator inside of crate::modules::
 pub struct Password {
-    /// Password type for the password dynamically selected from the type
-    /// passed from the CLI argument.
-    passtype: PasswordType,
     /// Minimum UTF-8 character generated.
     minimum_character: u8,
     /// Maximum UTF-8 character generated.
     maximum_character: u8,
+    /// Password type for the password dynamically selected from the type
+    /// passed from the CLI argument.
+    passtype: PasswordType,
 }
 
 impl Password {
@@ -235,9 +219,6 @@ impl Password {
 pub trait CheckArgs {
     /// Trait used to automatically parse the subcommand passed to fill out the password type.
     fn check_arguments(self) -> Password;
-
-    /// Used in unit tests to check and compare the length.
-    #[allow(dead_code)]
     fn get_length(&self) -> u8;
 }
 
@@ -318,7 +299,6 @@ impl CheckArgs for StringArgs {
         //! `string` arguments.
         create_arguments_for_strings(self.space, self.encoding)
     }
-
     fn get_length(&self) -> u8 {
         //! Returns the password's length from the overlaying struct.
         //! Used for tests since this trait can be used as a generic.
@@ -359,7 +339,6 @@ mod tests {
         let args = NewArgs {
             space: false,
             length: 30,
-            skip: true,
             unencrypted: true,
             encoding: String::from("ascii"),
             output: String::from("none"),
