@@ -119,24 +119,22 @@ pub fn store(
     payload: &String,
     unencrypted: bool,
 ) -> Result<(), Box<dyn Error>> {
-    //! stores a payload into a given image. Takes the file and outp
+    //! stores a payload into a given image. Takes the file and outputs it to the png
 
-    let mut string_to_store: Vec<u8> = Vec::from(payload.as_bytes().to_vec());
+    let mut string_to_store = payload.as_bytes().to_vec();
+
     if !unencrypted {
-        // create a password
-        let key = create_password()?;
-        //end key
-        string_to_store = string_to_store.encrypt(key.as_str())?;
+        // weird bug occurs here
+        string_to_store = string_to_store.encrypt(create_password()?);
     }
     // steganography stuff
     let img = file_as_dynamic_image(in_file_path.to_owned());
     let enc = steganography::encoder::Encoder::new(&string_to_store, img);
     let steg_image = enc.encode_alpha();
 
-    // format the output to a readable format.
+    // formats the output name to remove any trailing .png extensions.
     in_file_path.format_output(output_fname);
     eprintln!("Storing data into {}", in_file_path);
-
     save_image_buffer(steg_image, in_file_path.to_string());
     Ok(eprintln!("Saved buffer to {}", in_file_path))
 }
