@@ -19,8 +19,8 @@ impl ClassicEncryption for Vec<u8> {
         let decrypted = stegano_legacy::decrypt_data(key.as_str(), self.as_slice());
         let password = match String::from_utf8(decrypted) {
             Ok(v) => v,
-            Err(e) => {
-                eprintln!("Failed to convert: reason {e}");
+            Err(_) => {
+                eprintln!("Your password was incorrect, please try again.");
                 return None;
             }
         };
