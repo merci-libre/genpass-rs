@@ -15,10 +15,10 @@ use steganography::{
 * this file. The purpose of this file is to handle all standard input regarding the aes-128 key
 * */
 trait OutputFormatting {
-    fn format_output(&mut self, output_fname: String) -> String;
+    fn format_output(&mut self, output_fname: String);
 }
 impl OutputFormatting for String {
-    fn format_output(&mut self, output_fname: String) -> String {
+    fn format_output(&mut self, output_fname: String) {
         //! Formats the output string to prevent overwriting the
         //! file at a given path. Outputs should be unique.
         let substring = "_output";
@@ -62,7 +62,6 @@ impl OutputFormatting for String {
             self.push_str(".png");
             i += 1;
         }
-        return self.clone();
     }
 }
 
