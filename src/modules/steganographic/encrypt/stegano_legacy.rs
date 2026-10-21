@@ -13,6 +13,8 @@
 * the encryption and decryption process.
 */
 
+use std::iter;
+
 use aes::cipher::{generic_array::GenericArray, BlockDecrypt, BlockEncrypt, KeyInit};
 use aes::Aes128;
 
@@ -26,7 +28,6 @@ pub fn pad_with_zeros(slice: &[u8]) -> [u8; 16] {
 pub fn encrypt_payload(key: &str, payload: &str) -> Vec<u8> {
     let in_key: &[u8; 16] = &pad_with_zeros(key.as_bytes());
     let key = GenericArray::clone_from_slice(in_key);
-
     if payload.len() <= 16 {
         let in_payload: &[u8; 16] = &pad_with_zeros(payload.as_bytes());
         let mut block = GenericArray::clone_from_slice(in_payload);
@@ -36,10 +37,18 @@ pub fn encrypt_payload(key: &str, payload: &str) -> Vec<u8> {
         block.to_vec()
     } else {
         let mut encrypted_data: Vec<u8> = Vec::new();
+        let mut payload = payload.as_bytes().to_vec();
 
-        for (i, chunk) in payload.as_bytes().chunks_exact(16).enumerate() {
-            let in_payload: &[u8; 16] = &pad_with_zeros(chunk);
-            let mut block = GenericArray::clone_from_slice(in_payload);
+        // pad with zeros
+        let chars_less_than_16 = 16 - (payload.len() % 16);
+        if chars_less_than_16 != 0 {
+            payload.extend(iter::repeat_n(0, chars_less_than_16));
+        }
+        let chunks = payload.chunks_exact(16);
+        // this should be fixed now...
+        for (i, chunk) in chunks.enumerate() {
+            // pads the remaining bits to 0
+            let mut block = GenericArray::clone_from_slice(chunk);
 
             let cipher = Aes128::new(&key);
             cipher.encrypt_block(&mut block);
@@ -50,7 +59,7 @@ pub fn encrypt_payload(key: &str, payload: &str) -> Vec<u8> {
                 encrypted_data = block.to_vec();
             }
         }
-
+        assert_eq!(&encrypted_data.len() % 16, 0);
         encrypted_data
     }
 }
